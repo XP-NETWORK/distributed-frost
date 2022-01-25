@@ -13,6 +13,7 @@
 use std::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
+use ethabi::Token;
 
 #[cfg(feature = "std")]
 use std::collections::HashMap;
@@ -28,8 +29,8 @@ use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 
-use sha2::Digest;
-use sha2::Sha512;
+use sha2::{Digest, Sha512};
+use tiny_keccak::{Hasher, Keccak};
 
 use crate::keygen::GroupKey;
 use crate::keygen::IndividualPublicKey;
@@ -180,21 +181,25 @@ pub(crate) struct IndividualPublicKeys(pub(crate) HashMap<[u8; 4], RistrettoPoin
 
 impl_indexed_hashmap!(Type = IndividualPublicKeys, Item = RistrettoPoint);
 
-/// Compute a Sha-512 hash of a `context_string` and a `message`.
-pub fn compute_message_hash(context_string: &[u8], message: &[u8]) -> [u8; 64] {
-    let mut h = Sha512::new();
+/// Compute a Keccak256 hash of am abi-encoded `context_string` and a `message`.
+pub fn compute_message_hash(context_string: &[u8], message: &[u8]) -> [u8; 32] {
+    let encoded = ethabi::encode(&vec![
+        Token::Bytes(context_string.to_vec()),
+        Token::Bytes(message.to_vec())
+    ]);
 
-    h.update(context_string);
-    h.update(message);
+    let mut h = Keccak::v256();
 
-    let mut output = [0u8; 64];
+    h.update(&encoded);
 
-    output.copy_from_slice(h.finalize().as_slice());
+    let mut output = [0u8; 32];
+
+    h.finalize(&mut output);
     output
 }
 
 fn compute_binding_factors_and_group_commitment(
-    message_hash: &[u8; 64],
+    message_hash: &[u8; 32],
     signers: &[Signer],
 ) -> (HashMap<u32, Scalar>, SignerRs)
 {
@@ -207,7 +212,7 @@ fn compute_binding_factors_and_group_commitment(
 
     // [DIFFERENT_TO_PAPER] I added a context string and reordered to hash
     // constants like the message first.
-    h.update(b"FROST-SHA512");
+    h.update(b"FROST-KECCAK256");
     h.update(&message_hash[..]);
 
     // [DIFFERENT_TO_PAPER] I added the set of participants (in the paper
@@ -243,7 +248,7 @@ fn compute_binding_factors_and_group_commitment(
     (binding_factors, Rs)
 }
 
-fn compute_challenge(message_hash: &[u8; 64], group_key: &GroupKey, R: &RistrettoPoint) -> Scalar {
+fn compute_challenge(message_hash: &[u8; 32], group_key: &GroupKey, R: &RistrettoPoint) -> Scalar {
     let mut h2 = Sha512::new();
 
     // XXX [PAPER] Decide if we want a context string for the challenge.  This
@@ -316,7 +321,7 @@ impl SecretKey {
     /// a string describing the error which occurred.
     pub fn sign(
         &self,
-        message_hash: &[u8; 64],
+        message_hash: &[u8; 32],
         group_key: &GroupKey,
         // XXX [PAPER] I don't know that we can guarantee simultaneous runs of the protocol
         // with these nonces being potentially reused?
@@ -418,7 +423,7 @@ impl Aggregator for Initial {}
 #[derive(Debug)]
 pub struct Finalized {
     /// The hashed context and message for signing.
-    pub(crate) message_hash: [u8; 64],
+    pub(crate) message_hash: [u8; 32],
 }
 
 impl Aggregator for Finalized {}
@@ -642,7 +647,7 @@ impl ThresholdSignature {
     /// A `Result` whose `Ok` value is an empty tuple if the threshold signature
     /// was successfully verified, otherwise a vector of the participant indices
     /// of any misbehaving participants.
-    pub fn verify(&self, group_key: &GroupKey, message_hash: &[u8; 64]) -> Result<(), ()> {
+    pub fn verify(&self, group_key: &GroupKey, message_hash: &[u8; 32]) -> Result<(), ()> {
         let c_prime = compute_challenge(&message_hash, &group_key, &self.R);
         let R_prime = RistrettoPoint::vartime_double_scalar_mul_basepoint(&c_prime, &-group_key.0, &self.z);
 
@@ -690,7 +695,7 @@ mod test {
         let message = b"This is a test of the tsunami alert system. This is only a test.";
         let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key, &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
 
@@ -734,7 +739,7 @@ mod test {
         let message = b"This is a test of the tsunami alert system. This is only a test.";
         let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key, &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
 
@@ -786,7 +791,7 @@ mod test {
         let message = b"This is a test of the tsunami alert system. This is only a test.";
         let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key, &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
 
@@ -892,7 +897,7 @@ mod test {
         let (p3_public_comshares, mut p3_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
         let (p4_public_comshares, mut p4_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 4, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key, &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
         aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
@@ -980,7 +985,7 @@ mod test {
         let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
         let (p2_public_comshares, mut p2_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 2, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key.clone(), &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key.clone(), context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
         aggregator.include_signer(2, p2_public_comshares.commitments[0], (&p2_sk).into());
@@ -1016,7 +1021,7 @@ mod test {
         let (p1_public_comshares, _) = generate_commitment_share_lists(&mut OsRng, 1, 1);
         let (p2_public_comshares, _) = generate_commitment_share_lists(&mut OsRng, 2, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, GroupKey(RistrettoPoint::identity()), &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, GroupKey(RistrettoPoint::identity()), context.to_vec(), message.to_vec());
 
         let p1_sk = SecretKey{ index: 1, key: Scalar::random(&mut OsRng) };
         let p2_sk = SecretKey{ index: 2, key: Scalar::random(&mut OsRng) };

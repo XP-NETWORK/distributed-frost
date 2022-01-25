@@ -17,6 +17,8 @@ exclude = [ ".gitignore" ]
 rustdoc-args = ["--html-in-header", "/opt/rustwide/workdir/docs/assets/rustdoc-include-katex-header.html"]
 
 [dependencies]
+ethabi = "16.0.0"
+tiny-keccak = "2.0.2"
 ed25519-dalek = { version = "1.0.1", default-features = false }
 curve25519-dalek = { version = "3", default-features = false }
 rand = { version = "0.7" }

@@ -877,7 +877,7 @@ mod test {
 
         let group_key = GroupKey(participants[0].group_key);
 
-        let mut aggregator = SignatureAggregator::new(params, group_key, &context[..], &message[..]);
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
 
         aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
         aggregator.include_signer(2, p2_public_comshares.commitments[0], (&p2_sk).into());
