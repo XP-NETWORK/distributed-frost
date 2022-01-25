@@ -78,8 +78,10 @@ impl PartialEq for Signer {
 /// signing protocol during the first phase of a signature creation.
 #[derive(Debug)]
 pub struct PartialThresholdSignature {
-    pub(crate) index: u32,
-    pub(crate) z: Scalar,
+    /// Index of the signature
+    pub index: u32,
+    /// Z component of sig
+    pub z: Scalar,
 }
 
 /// A complete, aggregated threshold signature.
@@ -390,14 +392,14 @@ pub struct SignatureAggregator<A: Aggregator> {
 /// The initial state for a [`SignatureAggregator`], which may include invalid
 /// or non-sensical data.
 #[derive(Debug)]
-pub struct Initial<'sa> {
+pub struct Initial {
     /// An optional context string for computing the message hash.
-    pub(crate) context: &'sa [u8],
+    pub(crate) context: Vec<u8>,
     /// The message to be signed.
-    pub(crate) message: &'sa [u8],
+    pub(crate) message: Vec<u8>,
 }
 
-impl Aggregator for Initial<'_> {}
+impl Aggregator for Initial {}
 
 /// The finalized state for a [`SignatureAggregator`], which has thoroughly
 /// validated its data.
@@ -421,7 +423,7 @@ pub struct Finalized {
 
 impl Aggregator for Finalized {}
 
-impl SignatureAggregator<Initial<'_>> {
+impl SignatureAggregator<Initial> {
     /// Construct a new signature aggregator from some protocol instantiation
     /// `parameters` and a `message` to be signed.
     ///
@@ -441,12 +443,12 @@ impl SignatureAggregator<Initial<'_>> {
     /// # Returns
     ///
     /// A new [`SignatureAggregator`].
-    pub fn new<'sa>(
+    pub fn new(
         parameters: Parameters,
         group_key: GroupKey,
-        context: &'sa [u8],
-        message: &'sa [u8],
-    ) -> SignatureAggregator<Initial<'sa>> {
+        context: Vec<u8>,
+        message: Vec<u8>,
+    ) -> SignatureAggregator<Initial> {
         let signers: Vec<Signer> = Vec::with_capacity(parameters.t as usize);
         let public_keys = IndividualPublicKeys::new();
         let partial_signatures = PartialThresholdSignatures::new();
