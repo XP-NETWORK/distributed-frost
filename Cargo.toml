@@ -1,12 +1,12 @@
 [package]
-name = "frost-dalek"
+name = "frost-secp256k1"
 version = "0.2.3"
-authors = ["isis lovecruft <isis@patternsinthevoid.net>"]
+authors = ["isis lovecruft <isis@patternsinthevoid.net>", "Rupansh Sekar <rupanshsekar@hotmail.com>"]
 edition = "2018"
 description = "FROST: Flexible Round-Optimised Threshold Signature using the Ristretto group"
 readme = "README.md"
 license = "BSD-3-Clause"
-repository = "https://github.com/isislovecruft/frost-dalek"
+repository = "https://github.com/xp-network/frost-dalek"
 homepage = "https://dalek.rs"
 documentation = "https://docs.rs/frost-dalek"
 keywords = ["cryptography", "frost", "ristretto", "signature", "threshold-signature"]
@@ -17,33 +17,22 @@ exclude = [ ".gitignore" ]
 rustdoc-args = ["--html-in-header", "/opt/rustwide/workdir/docs/assets/rustdoc-include-katex-header.html"]
 
 [dependencies]
-ethabi = "16.0.0"
-tiny-keccak = "2.0.2"
-ed25519-dalek = { version = "1.0.1", default-features = false }
-curve25519-dalek = { version = "3", default-features = false }
-rand = { version = "0.7" }
-sha2 = { version = "0.9" }
+rand = { version = "0.8" }
+sha3 = { version = "0.10" }
 subtle = { version = "2.4", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
+k256 = { version = "0.10.2", features = ["keccak256"] }
 
 [dev-dependencies]
 criterion = { version = "0.3" }
-ed25519-dalek = { version = "1.0.1", default-features = false }
+secp256k1 = "0.21"
 
 [[bench]]
 name = "dalek_benchmarks"
 harness = false
 
 [features]
-default = ["std", "u64_backend"]
+default = ["std"]
 
-nightly = ["curve25519-dalek/nightly", "ed25519-dalek/nightly"]
-std = ["curve25519-dalek/std", "ed25519-dalek/std"]
-alloc = ["curve25519-dalek/alloc", "ed25519-dalek/alloc"]
-
-# The u32 backend uses u32s with u64 products.
-u32_backend = ["curve25519-dalek/u32_backend", "ed25519-dalek/u32_backend"]
-# The u64 backend uses u64s with u128 products.
-u64_backend = ["curve25519-dalek/u64_backend", "ed25519-dalek/u64_backend"]
-# The SIMD backend uses parallel formulas, using either AVX2 or AVX512-IFMA.
-simd_backend = ["curve25519-dalek/simd_backend", "ed25519-dalek/simd_backend"]
+std = []
+alloc = []

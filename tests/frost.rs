@@ -10,9 +10,6 @@
 //! Integration tests for FROST.
 
 #[cfg(feature = "std")]
-use ed25519_dalek::Verifier;
-
-#[cfg(feature = "std")]
 use rand::rngs::OsRng;
 
 #[cfg(feature = "std")]
@@ -107,11 +104,11 @@ fn signing_and_verification_3_out_of_5() {
     let p4_state = p4_state.to_round_two(p4_my_secret_shares).unwrap();
     let p5_state = p5_state.to_round_two(p5_my_secret_shares).unwrap();
 
-    let (group_key, p1_sk) = p1_state.finish(p1.public_key().unwrap()).unwrap();
-    let (_, _) = p2_state.finish(p2.public_key().unwrap()).unwrap();
-    let (_, p3_sk) = p3_state.finish(p3.public_key().unwrap()).unwrap();
-    let (_, p4_sk) = p4_state.finish(p4.public_key().unwrap()).unwrap();
-    let (_, _) = p5_state.finish(p5.public_key().unwrap()).unwrap();
+    let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+    let (_, _) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
+    let (_, p3_sk) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
+    let (_, p4_sk) = p4_state.finish(&p4.public_key().unwrap()).unwrap();
+    let (_, _) = p5_state.finish(&p5.public_key().unwrap()).unwrap();
 
     let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
     let message = b"This is a test of the tsunami alert system. This is only a test.";
@@ -143,10 +140,11 @@ fn signing_and_verification_3_out_of_5() {
     assert!(verification_result.is_ok());
 }
 
-/// We are currently incompatible with ed25519 verification.
 #[cfg(feature = "std")]
 #[test]
-fn signing_and_verification_with_ed25519_dalek_2_out_of_3() {
+fn signing_and_verification_with_schnorr_dalek_2_out_of_3() {
+    use secp256k1::{Secp256k1, schnorr::Signature, Message, XOnlyPublicKey};
+
     let params = Parameters { n: 3, t: 2 };
 
     let (p1, p1coeffs) = Participant::new(&params, 1);
@@ -187,9 +185,9 @@ fn signing_and_verification_with_ed25519_dalek_2_out_of_3() {
     let p2_state = p2_state.to_round_two(p2_my_secret_shares).unwrap();
     let p3_state = p3_state.to_round_two(p3_my_secret_shares).unwrap();
 
-    let (group_key, p1_sk) = p1_state.finish(p1.public_key().unwrap()).unwrap();
-    let (_, p2_sk) = p2_state.finish(p2.public_key().unwrap()).unwrap();
-    let (_, p3_sk) = p3_state.finish(p3.public_key().unwrap()).unwrap();
+    let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+    let (_, p2_sk) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
+    let (_, p3_sk) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
 
     let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
     let message = b"This is a test of the tsunami alert system. This is only a test.";
@@ -212,30 +210,33 @@ fn signing_and_verification_with_ed25519_dalek_2_out_of_3() {
 
     let aggregator = aggregator.finalize().unwrap();
     let threshold_signature = aggregator.aggregate().unwrap();
+    println!("thres {}", threshold_signature.to_bytes()[64]);
     let verification_result = threshold_signature.verify(&group_key, &message_hash);
 
     assert!(verification_result.is_ok());
 
     let signature_bytes = threshold_signature.to_bytes();
-    let signature = ed25519_dalek::Signature::from(signature_bytes);
+
+    let signature = Signature::from_slice(&signature_bytes[1..]).unwrap();
 
     let public_key_bytes = group_key.to_bytes();
-    let public_key = ed25519_dalek::PublicKey::from_bytes(&public_key_bytes[..]);
 
-    if public_key.is_ok() {
-        let pk = public_key.unwrap();
-        println!("Verifying signature");
-        let verified = pk.verify(&message_hash[..], &signature).is_ok();
+    let message = Message::from_slice(&message_hash).unwrap();
+    let pk = XOnlyPublicKey::from_slice(&public_key_bytes[1..]).unwrap();
 
-        if verified {
-            println!("Public key was okay? {:?}", pk.to_bytes());
-            println!("Signature checked out? {:?}", signature_bytes);
-            println!("p1 secret key: {:?}", p1_sk);
-            println!("p2 secret key: {:?}", p2_sk);
-            println!("p3 secret key: {:?}", p3_sk);
-            println!("p1 secret commitment shares: {:?}", p1_secret_comshares);
-            println!("p3 secret commitment shares: {:?}", p3_secret_comshares);
-            assert!(false);
-        }
+    let schnorr = Secp256k1::verification_only();
+
+    println!("Verifying signature");
+    let verified = schnorr.verify_schnorr(&signature, &message, &pk).is_ok();
+
+    if verified {
+        println!("Public key was okay? {:?}", public_key_bytes);
+        println!("Signature checked out? {:?}", signature_bytes);
+        println!("p1 secret key: {:?}", p1_sk);
+        println!("p2 secret key: {:?}", p2_sk);
+        println!("p3 secret key: {:?}", p3_sk);
+        println!("p1 secret commitment shares: {:?}", p1_secret_comshares);
+        println!("p3 secret commitment shares: {:?}", p3_secret_comshares);
+        assert!(false);
     }
 }

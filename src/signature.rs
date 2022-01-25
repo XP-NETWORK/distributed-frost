@@ -13,7 +13,13 @@
 use std::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
-use ethabi::Token;
+
+use k256::FieldBytes;
+use k256::ProjectivePoint;
+use k256::elliptic_curve::PrimeField;
+use k256::elliptic_curve::group::GroupEncoding;
+use sha3::Digest;
+use sha3::Keccak256;
 
 #[cfg(feature = "std")]
 use std::collections::HashMap;
@@ -24,13 +30,9 @@ use std::cmp::Ordering;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
-use curve25519_dalek::ristretto::CompressedRistretto;
-use curve25519_dalek::ristretto::RistrettoPoint;
-use curve25519_dalek::scalar::Scalar;
-
-use sha2::{Digest, Sha512};
-use tiny_keccak::{Hasher, Keccak};
+use k256::CompressedPoint;
+use k256::AffinePoint;
+use k256::Scalar;
 
 use crate::keygen::GroupKey;
 use crate::keygen::IndividualPublicKey;
@@ -49,7 +51,7 @@ pub struct Signer {
     pub participant_index: u32,
     /// One of the commitments that were published by each signing participant
     /// in the pre-computation phase.
-    pub published_commitment_share: (RistrettoPoint, RistrettoPoint),
+    pub published_commitment_share: (AffinePoint, AffinePoint),
 }
 
 impl Ord for Signer {
@@ -88,33 +90,28 @@ pub struct PartialThresholdSignature {
 /// A complete, aggregated threshold signature.
 #[derive(Debug)]
 pub struct ThresholdSignature {
-    pub(crate) R: RistrettoPoint,
+    pub(crate) R: AffinePoint,
     pub(crate) z: Scalar,
 }
 
 impl ThresholdSignature {
     /// Serialize this threshold signature to an array of 64 bytes.
-    pub fn to_bytes(&self) -> [u8; 64] {
-        let mut bytes = [0u8; 64];
+    pub fn to_bytes(&self) -> [u8; 65] {
+        let mut bytes = [0u8; 65];
 
-        bytes[..32].copy_from_slice(&self.R.compress().as_bytes()[..]);
-        bytes[32..].copy_from_slice(&self.z.as_bytes()[..]);
+        bytes[..33].copy_from_slice(&self.R.to_bytes()[..]);
+        bytes[33..].copy_from_slice(&self.z.to_bytes()[..]);
         bytes
     }
 
     /// Attempt to deserialize a threshold signature from an array of 64 bytes.
-    pub fn from_bytes(bytes: [u8; 64]) -> Result<ThresholdSignature, ()> {
-        let mut array = [0u8; 32];
+    pub fn from_bytes(bytes: [u8; 65]) -> Option<ThresholdSignature> {
+        let Rc = CompressedPoint::from_slice(&bytes[..33]);
+        let R = Option::from(AffinePoint::from_bytes(&Rc))?;
 
-        array.copy_from_slice(&bytes[..32]);
+        let z = Option::from(Scalar::from_repr(FieldBytes::clone_from_slice(&bytes[33..])))?;
 
-        let R = CompressedRistretto(array).decompress().ok_or(())?;
-
-        array.copy_from_slice(&bytes[32..]);
-
-        let z = Scalar::from_canonical_bytes(array).ok_or(())?;
-
-        Ok(ThresholdSignature { R, z })
+        Some(ThresholdSignature { R, z })
     }
 }
 
@@ -163,9 +160,9 @@ impl $type {
 // XXX TODO there might be a more efficient way to optimise this data structure
 //     and its algorithms?
 #[derive(Debug)]
-struct SignerRs(pub(crate) HashMap<[u8; 4], RistrettoPoint>);
+struct SignerRs(pub(crate) HashMap<[u8; 4], AffinePoint>);
 
-impl_indexed_hashmap!(Type = SignerRs, Item = RistrettoPoint);
+impl_indexed_hashmap!(Type = SignerRs, Item = AffinePoint);
 
 /// A type for storing signers' partial threshold signatures along with the
 /// respective signer participant index.
@@ -177,25 +174,18 @@ impl_indexed_hashmap!(Type = PartialThresholdSignatures, Item = Scalar);
 /// A type for storing signers' individual public keys along with the respective
 /// signer participant index.
 #[derive(Debug)]
-pub(crate) struct IndividualPublicKeys(pub(crate) HashMap<[u8; 4], RistrettoPoint>);
+pub(crate) struct IndividualPublicKeys(pub(crate) HashMap<[u8; 4], AffinePoint>);
 
-impl_indexed_hashmap!(Type = IndividualPublicKeys, Item = RistrettoPoint);
+impl_indexed_hashmap!(Type = IndividualPublicKeys, Item = AffinePoint);
 
 /// Compute a Keccak256 hash of am abi-encoded `context_string` and a `message`.
 pub fn compute_message_hash(context_string: &[u8], message: &[u8]) -> [u8; 32] {
-    let encoded = ethabi::encode(&vec![
-        Token::Bytes(context_string.to_vec()),
-        Token::Bytes(message.to_vec())
-    ]);
+    let mut h = Keccak256::default();
 
-    let mut h = Keccak::v256();
+    h.update(context_string);
+    h.update(message);
 
-    h.update(&encoded);
-
-    let mut output = [0u8; 32];
-
-    h.finalize(&mut output);
-    output
+    h.finalize().into()
 }
 
 fn compute_binding_factors_and_group_commitment(
@@ -208,7 +198,7 @@ fn compute_binding_factors_and_group_commitment(
 
     // [CFRG] Should the hash function be hardcoded in the RFC or should
     // we instead specify the output/block size?
-    let mut h = Sha512::new();
+    let mut h = Keccak256::new();
 
     // [DIFFERENT_TO_PAPER] I added a context string and reordered to hash
     // constants like the message first.
@@ -222,9 +212,9 @@ fn compute_binding_factors_and_group_commitment(
         let hiding = signer.published_commitment_share.0;
         let binding = signer.published_commitment_share.1;
 
-        h.update(signer.participant_index.to_be_bytes());
-        h.update(hiding.compress().as_bytes());
-        h.update(binding.compress().as_bytes());
+        h.update(&signer.participant_index.to_be_bytes());
+        h.update(&hiding.to_bytes());
+        h.update(&binding.to_bytes());
     }
 
     for signer in signers.iter() {
@@ -235,30 +225,30 @@ fn compute_binding_factors_and_group_commitment(
 
         // [DIFFERENT_TO_PAPER] I put in the participant index last to finish
         // their unique calculation of rho.
-        h1.update(signer.participant_index.to_be_bytes());
-        h1.update(hiding.compress().as_bytes());
-        h1.update(binding.compress().as_bytes());
+        h1.update(&signer.participant_index.to_be_bytes());
+        h1.update(&hiding.to_bytes());
+        h1.update(&binding.to_bytes());
 
-        let binding_factor = Scalar::from_hash(h1); // This is rho in the paper.
+        let binding_factor = Scalar::from_repr(h1.finalize()).unwrap(); // This is rho in the paper.
 
         // THIS IS THE MAGIC STUFF ↓↓↓
-        Rs.insert(&signer.participant_index, hiding + (binding_factor * binding));
+        Rs.insert(&signer.participant_index, ((binding * binding_factor) + hiding).to_affine());
 	    binding_factors.insert(signer.participant_index, binding_factor);
     }
     (binding_factors, Rs)
 }
 
-fn compute_challenge(message_hash: &[u8; 32], group_key: &GroupKey, R: &RistrettoPoint) -> Scalar {
-    let mut h2 = Sha512::new();
+fn compute_challenge(message_hash: &[u8; 32], group_key: &GroupKey, R: &AffinePoint) -> Scalar {
+    let mut h2 = Keccak256::default();
 
     // XXX [PAPER] Decide if we want a context string for the challenge.  This
     // would break compatibility with standard ed25519 libraries for verification.
-    h2.update(b"FROST-SHA512");
-    h2.update(R.compress().as_bytes());
-    h2.update(group_key.to_bytes());
+    h2.update(b"FROST-KECCAK256");
+    h2.update(&R.to_bytes());
+    h2.update(&group_key.to_bytes());
     h2.update(&message_hash[..]);
 
-    Scalar::from_hash(h2)
+    Scalar::from_repr(h2.finalize()).unwrap()
 }
 
 /// Calculate using Lagrange's method the interpolation of a polynomial.
@@ -272,8 +262,8 @@ pub(crate) fn calculate_lagrange_coefficients(
     all_participant_indices: &[u32],
 ) -> Result<Scalar, &'static str>
 {
-    let mut num = Scalar::one();
-    let mut den = Scalar::one();
+    let mut num = Scalar::ONE;
+    let mut den = Scalar::ONE;
 
     let mine = Scalar::from(*participant_index);
 
@@ -287,10 +277,10 @@ pub(crate) fn calculate_lagrange_coefficients(
         den *= s - mine; // Check to ensure that one person isn't trying to sign twice.
     }
 
-    if den == Scalar::zero() {
+    if den == Scalar::ZERO {
         return Err("Duplicate shares provided");
     }
-    Ok(num * den.invert())
+    Ok(num * den.invert().unwrap())
 }
 
 impl SecretKey {
@@ -300,7 +290,7 @@ impl SecretKey {
     /// # Inputs
     ///
     /// * The `message_hash` to be signed by every individual signer, this should be
-    ///   the `Sha512` digest of the message, optionally along with some application-specific
+    ///   the `Keccak256` digest of the message, optionally along with some application-specific
     ///   context string, and can be calculated with the helper function
     ///   [`compute_message_hash`].
     /// * The public [`GroupKey`] for this group of signing participants,
@@ -335,8 +325,8 @@ impl SecretKey {
         }
 
         let (binding_factors, Rs) = compute_binding_factors_and_group_commitment(&message_hash, &signers);
-        let R: RistrettoPoint = Rs.values().sum();
-        let challenge = compute_challenge(&message_hash, &group_key, &R);
+        let R: ProjectivePoint = Rs.values().fold(ProjectivePoint::IDENTITY, |acc, x| acc + x);
+        let challenge = compute_challenge(&message_hash, &group_key, &R.to_affine());
         let my_binding_factor = binding_factors.get(&self.index).ok_or("Could not compute our blinding factor")?;
         let all_participant_indices: Vec<u32> = signers.iter().map(|x| x.participant_index).collect();
         let lambda: Scalar = calculate_lagrange_coefficients(&self.index, &all_participant_indices)?;
@@ -477,7 +467,7 @@ impl SignatureAggregator<Initial> {
     pub fn include_signer(
         &mut self,
         participant_index: u32,
-        published_commitment_share: (RistrettoPoint, RistrettoPoint),
+        published_commitment_share: (AffinePoint, AffinePoint),
         public_key: IndividualPublicKey)
     {
         assert_eq!(participant_index, public_key.index,
@@ -591,10 +581,11 @@ impl SignatureAggregator<Finalized> {
         let mut misbehaving_participants: HashMap<u32, &'static str> = HashMap::new();
         
         let (_, Rs) = compute_binding_factors_and_group_commitment(&self.aggregator.message_hash, &self.state.signers);
-        let R: RistrettoPoint = Rs.values().sum();
-        let c = compute_challenge(&self.aggregator.message_hash, &self.state.group_key, &R);
+        let R: ProjectivePoint = Rs.values().fold(ProjectivePoint::IDENTITY, |acc, x| acc + x);
+        let Raff = R.to_affine();
+        let c = compute_challenge(&self.aggregator.message_hash, &self.state.group_key, &Raff);
         let all_participant_indices: Vec<u32> = self.state.signers.iter().map(|x| x.participant_index).collect();
-        let mut z = Scalar::zero();
+        let mut z = Scalar::ZERO;
 
         for signer in self.state.signers.iter() {
             // [DIFFERENT_TO_PAPER] We're not just pulling lambda out of our
@@ -618,13 +609,13 @@ impl SignatureAggregator<Finalized> {
             // Again, this unwrap() cannot fail, because of the checks in finalize().
             let Y_i = self.state.public_keys.get(&signer.participant_index).unwrap();
 
-            let check = &RISTRETTO_BASEPOINT_TABLE * partial_sig;
+            let check = AffinePoint::GENERATOR * partial_sig;
 
             // Again, this unwrap() cannot fail, because we check the
             // participant indexes against the expected ones in finalize().
             let R_i = Rs.get(&signer.participant_index).unwrap();
 
-            if check == R_i + (Y_i * (c * lambda)) {
+            if check == (*Y_i * (c * lambda)) + R_i {
                 z += partial_sig;
             } else {
                 // XXX We don't really need the error string anymore, since there's only one failure mode.
@@ -634,7 +625,7 @@ impl SignatureAggregator<Finalized> {
 
         match ! misbehaving_participants.is_empty() {
             true => Err(misbehaving_participants),
-            false => Ok(ThresholdSignature {z, R}),
+            false => Ok(ThresholdSignature {z, R: Raff}),
         }
     }
 }
@@ -649,9 +640,9 @@ impl ThresholdSignature {
     /// of any misbehaving participants.
     pub fn verify(&self, group_key: &GroupKey, message_hash: &[u8; 32]) -> Result<(), ()> {
         let c_prime = compute_challenge(&message_hash, &group_key, &self.R);
-        let R_prime = RistrettoPoint::vartime_double_scalar_mul_basepoint(&c_prime, &-group_key.0, &self.z);
+        let R_prime  = -group_key.0 * c_prime + AffinePoint::GENERATOR * self.z;
 
-        match self.R.compress() == R_prime.compress() {
+        match self.R.to_bytes() == R_prime.to_affine().to_bytes() {
             true => Ok(()),
             false => Err(()),
         }
@@ -666,8 +657,7 @@ mod test {
     use crate::keygen::{DistributedKeyGeneration, RoundOne};
     use crate::precomputation::generate_commitment_share_lists;
 
-    use curve25519_dalek::traits::Identity;
-
+    use k256::elliptic_curve::Field;
     use rand::rngs::OsRng;
 
     #[test]
@@ -676,7 +666,7 @@ mod test {
 
         let (p1, p1coeffs) = Participant::new(&params, 1);
 
-        p1.proof_of_secret_key.verify(&p1.index, &p1.commitments[0]).unwrap();
+        p1.proof_of_secret_key.verify(&p1.index, &p1.commitments[0].to_affine()).unwrap();
 
         let mut p1_other_participants: Vec<Participant> = Vec::new();
         let p1_state = DistributedKeyGeneration::<RoundOne>::new(&params,
@@ -685,7 +675,7 @@ mod test {
                                                                  &mut p1_other_participants).unwrap();
         let p1_my_secret_shares = Vec::new();
         let p1_state = p1_state.to_round_two(p1_my_secret_shares).unwrap();
-        let result = p1_state.finish(p1.public_key().unwrap());
+        let result = p1_state.finish(&p1.public_key().unwrap());
 
         assert!(result.is_ok());
 
@@ -733,7 +723,7 @@ mod test {
         let p1_my_secret_shares = Vec::with_capacity(0);
         let p1_state = p1_state.to_round_two(p1_my_secret_shares).unwrap();
 
-        let (group_key, p1_sk) = p1_state.finish(p1.public_key().unwrap()).unwrap();
+        let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
 
         let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
         let message = b"This is a test of the tsunami alert system. This is only a test.";
@@ -784,8 +774,8 @@ mod test {
         let p1_state = p1_state.to_round_two(p1_my_secret_shares).unwrap();
         let p2_state = p2_state.to_round_two(p2_my_secret_shares).unwrap();
 
-        let (group_key, p1_sk) = p1_state.finish(p1.public_key().unwrap()).unwrap();
-        let (_, _p2_sk) = p2_state.finish(p2.public_key().unwrap()).unwrap();
+        let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+        let (_, _p2_sk) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
 
         let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
         let message = b"This is a test of the tsunami alert system. This is only a test.";
@@ -885,11 +875,11 @@ mod test {
         let p4_state = p4_state.to_round_two(p4_my_secret_shares).unwrap();
         let p5_state = p5_state.to_round_two(p5_my_secret_shares).unwrap();
 
-        let (group_key, p1_sk) = p1_state.finish(p1.public_key().unwrap()).unwrap();
-        let (_, _) = p2_state.finish(p2.public_key().unwrap()).unwrap();
-        let (_, p3_sk) = p3_state.finish(p3.public_key().unwrap()).unwrap();
-        let (_, p4_sk) = p4_state.finish(p4.public_key().unwrap()).unwrap();
-        let (_, _) = p5_state.finish(p5.public_key().unwrap()).unwrap();
+        let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+        let (_, _) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
+        let (_, p3_sk) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
+        let (_, p4_sk) = p4_state.finish(&p4.public_key().unwrap()).unwrap();
+        let (_, _) = p5_state.finish(&p5.public_key().unwrap()).unwrap();
 
         let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
         let message = b"This is a test of the tsunami alert system. This is only a test.";
@@ -930,8 +920,8 @@ mod test {
             let (p2, p2coeffs) = Participant::new(&params, 2);
             let (p3, p3coeffs) = Participant::new(&params, 3);
 
-            p2.proof_of_secret_key.verify(&p2.index, &p2.commitments[0])?;
-            p3.proof_of_secret_key.verify(&p3.index, &p3.commitments[0])?;
+            p2.proof_of_secret_key.verify(&p2.index, &p2.commitments[0].to_affine())?;
+            p3.proof_of_secret_key.verify(&p3.index, &p3.commitments[0].to_affine())?;
 
             let mut p1_other_participants: Vec<Participant> = vec!(p2.clone(), p3.clone());
             let p1_state = DistributedKeyGeneration::<RoundOne>::new(&params,
@@ -965,12 +955,12 @@ mod test {
             let p2_state = p2_state.to_round_two(p2_my_secret_shares)?;
             let p3_state = p3_state.to_round_two(p3_my_secret_shares)?;
 
-            let (p1_group_key, p1_secret_key) = p1_state.finish(p1.public_key().unwrap())?;
-            let (p2_group_key, p2_secret_key) = p2_state.finish(p2.public_key().unwrap())?;
-            let (p3_group_key, p3_secret_key) = p3_state.finish(p3.public_key().unwrap())?;
+            let (p1_group_key, p1_secret_key) = p1_state.finish(&p1.public_key().unwrap())?;
+            let (p2_group_key, p2_secret_key) = p2_state.finish(&p2.public_key().unwrap())?;
+            let (p3_group_key, p3_secret_key) = p3_state.finish(&p3.public_key().unwrap())?;
 
-            assert!(p1_group_key.0.compress() == p2_group_key.0.compress());
-            assert!(p2_group_key.0.compress() == p3_group_key.0.compress());
+            assert!(p1_group_key.0.to_bytes() == p2_group_key.0.to_bytes());
+            assert!(p2_group_key.0.to_bytes() == p3_group_key.0.to_bytes());
 
             Ok((params, p1_secret_key, p2_secret_key, p3_secret_key, p1_group_key))
         }
@@ -1021,7 +1011,7 @@ mod test {
         let (p1_public_comshares, _) = generate_commitment_share_lists(&mut OsRng, 1, 1);
         let (p2_public_comshares, _) = generate_commitment_share_lists(&mut OsRng, 2, 1);
 
-        let mut aggregator = SignatureAggregator::new(params, GroupKey(RistrettoPoint::identity()), context.to_vec(), message.to_vec());
+        let mut aggregator = SignatureAggregator::new(params, GroupKey(AffinePoint::IDENTITY), context.to_vec(), message.to_vec());
 
         let p1_sk = SecretKey{ index: 1, key: Scalar::random(&mut OsRng) };
         let p2_sk = SecretKey{ index: 2, key: Scalar::random(&mut OsRng) };

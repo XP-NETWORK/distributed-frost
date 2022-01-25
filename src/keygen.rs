@@ -146,9 +146,9 @@
 //!
 //! // Each participant can now derive their long-lived secret keys and the group's
 //! // public key.
-//! let (alice_group_key, alice_secret_key) = alice_state.finish(alice.public_key().unwrap())?;
-//! let (bob_group_key, bob_secret_key) = bob_state.finish(bob.public_key().unwrap())?;
-//! let (carol_group_key, carol_secret_key) = carol_state.finish(carol.public_key().unwrap())?;
+//! let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
+//! let (bob_group_key, bob_secret_key) = bob_state.finish(&bob.public_key().unwrap())?;
+//! let (carol_group_key, carol_secret_key) = carol_state.finish(&carol.public_key().unwrap())?;
 //!
 //! // They should all derive the same group public key.
 //! assert!(alice_group_key == bob_group_key);
@@ -178,12 +178,13 @@ use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
-use curve25519_dalek::ristretto::CompressedRistretto;
-use curve25519_dalek::ristretto::RistrettoPoint;
-use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::traits::Identity;
+use k256::CompressedPoint;
+use k256::AffinePoint;
+use k256::ProjectivePoint;
+use k256::Scalar;
 
+use k256::elliptic_curve::Field;
+use k256::elliptic_curve::group::GroupEncoding;
 use rand::rngs::OsRng;
 
 use zeroize::Zeroize;
@@ -200,7 +201,7 @@ pub struct Coefficients(pub Vec<Scalar>);
 /// A commitment to the dealer's secret polynomial coefficients for Feldman's
 /// verifiable secret sharing scheme.
 #[derive(Clone, Debug)]
-pub struct VerifiableSecretSharingCommitment(pub(crate) Vec<RistrettoPoint>);
+pub struct VerifiableSecretSharingCommitment(pub(crate) Vec<ProjectivePoint>);
 
 /// A participant created by a trusted dealer.
 ///
@@ -212,7 +213,7 @@ pub struct VerifiableSecretSharingCommitment(pub(crate) Vec<RistrettoPoint>);
 pub struct DealtParticipant {
     pub(crate) secret_share: SecretShare,
     pub(crate) public_key: IndividualPublicKey,
-    pub(crate) group_key: RistrettoPoint,
+    pub(crate) group_key: AffinePoint,
 }
 
 /// A participant in a threshold signing.
@@ -222,7 +223,7 @@ pub struct Participant {
     pub index: u32,
     /// A vector of Pedersen commitments to the coefficients of this
     /// participant's private polynomial.
-    pub commitments: Vec<RistrettoPoint>,
+    pub commitments: Vec<ProjectivePoint>,
     /// The zero-knowledge proof of knowledge of the secret key (a.k.a. the
     /// first coefficient in the private polynomial).  It is constructed as a
     /// Schnorr signature using \\( a_{i0} \\) as the signing key.
@@ -241,8 +242,8 @@ impl Participant {
     /// with respect to different polynomials and they will fail to create
     /// threshold signatures which validate.
     pub fn dealer(parameters: &Parameters) -> (Vec<DealtParticipant>, VerifiableSecretSharingCommitment) {
-        let mut rng: OsRng = OsRng;
-        let secret = Scalar::random(&mut rng);
+        let rng: OsRng = OsRng;
+        let secret = Scalar::random(OsRng);
 
         generate_shares(parameters, secret, rng)
     }
@@ -273,7 +274,7 @@ impl Participant {
         let t: usize = parameters.t as usize;
         let mut rng: OsRng = OsRng;
         let mut coefficients: Vec<Scalar> = Vec::with_capacity(t);
-        let mut commitments: Vec<RistrettoPoint> = Vec::with_capacity(t);
+        let mut commitments: Vec<ProjectivePoint> = Vec::with_capacity(t);
 
         for _ in 0..t {
             coefficients.push(Scalar::random(&mut rng));
@@ -285,7 +286,7 @@ impl Participant {
         //         C_i = [\phi_{i0}, ..., \phi_{i(t-1)}], where \phi_{ij} = g^{a_{ij}},
         //         0 ≤ j ≤ t-1.
         for j in 0..t {
-            commitments.push(&coefficients.0[j] * &RISTRETTO_BASEPOINT_TABLE);
+            commitments.push(AffinePoint::GENERATOR * &coefficients.0[j]);
         }
 
         // Yes, I know the steps are out of order.  It saves one scalar multiplication.
@@ -294,7 +295,7 @@ impl Participant {
         //         a_{i0} by calculating a Schnorr signature \alpha_i = (s, R).  (In
         //         the FROST paper: \alpha_i = (\mu_i, c_i), but we stick with Schnorr's
         //         original notation here.)
-        let proof: NizkOfSecretKey = NizkOfSecretKey::prove(&index, &coefficients.0[0], &commitments[0], rng);
+        let proof: NizkOfSecretKey = NizkOfSecretKey::prove(&index, &coefficients.0[0], &commitments[0].to_affine(), rng);
 
         // Step 4: Every participant P_i broadcasts C_i, \alpha_i to all other participants.
         (Participant { index, commitments, proof_of_secret_key: proof }, coefficients)
@@ -303,9 +304,9 @@ impl Participant {
     /// Retrieve \\( \alpha_{i0} * B \\), where \\( B \\) is the Ristretto basepoint.
     ///
     /// This is used to pass into the final call to `DistributedKeyGeneration::<RoundTwo>.finish()`.
-    pub fn public_key(&self) -> Option<&RistrettoPoint> {
+    pub fn public_key(&self) -> Option<AffinePoint> {
         if !self.commitments.is_empty() {
-            return Some(&self.commitments[0]);
+            return Some(self.commitments[0].to_affine());
         }
         None
     }
@@ -333,21 +334,21 @@ fn generate_shares(parameters: &Parameters, secret: Scalar, mut rng: OsRng) -> (
     //         C_i = [\phi_{i0}, ..., \phi_{i(t-1)}], where \phi_{ij} = g^{a_{ij}},
     //         0 ≤ j ≤ t-1.
     for j in 0..t {
-        commitment.0.push(&coefficients.0[j] * &RISTRETTO_BASEPOINT_TABLE);
+        commitment.0.push(AffinePoint::GENERATOR * &coefficients.0[j]);
     }
 
     // Generate secret shares here
-    let group_key = &RISTRETTO_BASEPOINT_TABLE * &coefficients.0[0];
+    let group_key = AffinePoint::GENERATOR * &coefficients.0[0];
 
     // Only one polynomial because dealer, then secret shards are dependent upon index.
     for i in 1..parameters.n + 1 {
         let secret_share = SecretShare::evaluate_polynomial(&i, &coefficients);
         let public_key = IndividualPublicKey {
             index: i,
-            share: &RISTRETTO_BASEPOINT_TABLE * &secret_share.polynomial_evaluation,
+            share: (AffinePoint::GENERATOR * &secret_share.polynomial_evaluation).to_affine(),
         };
 
-        participants.push(DealtParticipant { secret_share, public_key, group_key });
+        participants.push(DealtParticipant { secret_share, public_key, group_key: group_key.to_affine() });
     }
     (participants, commitment)
 }
@@ -479,7 +480,7 @@ impl DistributedKeyGeneration<RoundOne> {
                     continue;
                 }
             };
-            match p.proof_of_secret_key.verify(&p.index, &public_key) {
+            match p.proof_of_secret_key.verify(&p.index, &public_key.to_affine()) {
                 Ok(_)  => their_commitments.push((p.index, VerifiableSecretSharingCommitment(p.commitments.clone()))),
                 Err(_) => misbehaving_participants.push(p.index),
             }
@@ -583,7 +584,7 @@ impl SecretShare {
     // XXX [PAPER] [CFRG] The participant index CANNOT be 0, or the secret share ends up being Scalar::zero().
     pub(crate) fn evaluate_polynomial(index: &u32, coefficients: &Coefficients) -> SecretShare {
         let term: Scalar = (*index).into();
-        let mut sum: Scalar = Scalar::zero();
+        let mut sum: Scalar = Scalar::ZERO;
 
         // Evaluate using Horner's method.
         for (index, coefficient) in coefficients.0.iter().rev().enumerate() {
@@ -600,9 +601,9 @@ impl SecretShare {
     /// Verify that this secret share was correctly computed w.r.t. some secret
     /// polynomial coefficients attested to by some `commitment`.
     pub(crate) fn verify(&self, commitment: &VerifiableSecretSharingCommitment) -> Result<(), ()> {
-        let lhs = &RISTRETTO_BASEPOINT_TABLE * &self.polynomial_evaluation;
+        let lhs = AffinePoint::GENERATOR * &self.polynomial_evaluation;
         let term: Scalar = self.index.into();
-        let mut rhs: RistrettoPoint = RistrettoPoint::identity();
+        let mut rhs: ProjectivePoint = ProjectivePoint::IDENTITY;
 
         for (index, com) in commitment.0.iter().rev().enumerate() {
             rhs += com;
@@ -612,7 +613,7 @@ impl SecretShare {
             }
         }
 
-        match lhs.compress() == rhs.compress() {
+        match lhs.to_affine().to_bytes() == rhs.to_affine().to_bytes() {
             true => Ok(()),
             false => Err(()),
         }
@@ -633,7 +634,7 @@ impl DistributedKeyGeneration<RoundTwo> {
     /// ```ignore
     /// let (group_key, secret_key) = state.finish(participant.public_key()?)?;
     /// ```
-    pub fn finish(mut self, my_commitment: &RistrettoPoint) -> Result<(GroupKey, SecretKey), ()> {
+    pub fn finish(mut self, my_commitment: &AffinePoint) -> Result<(GroupKey, SecretKey), ()> {
         let secret_key = self.calculate_signing_key()?;
         let group_key = self.calculate_group_key(my_commitment)?;
 
@@ -648,7 +649,7 @@ impl DistributedKeyGeneration<RoundTwo> {
     /// participants.
     pub(crate) fn calculate_signing_key(&self) -> Result<SecretKey, ()> {
         let my_secret_shares = self.state.my_secret_shares.as_ref().ok_or(())?;
-        let mut key = my_secret_shares.iter().map(|x| x.polynomial_evaluation).sum();
+        let mut key = my_secret_shares.iter().fold(Scalar::ZERO, |acc, x| acc + x.polynomial_evaluation);
 
         key += self.state.my_secret_share.polynomial_evaluation;
 
@@ -660,8 +661,8 @@ impl DistributedKeyGeneration<RoundTwo> {
     /// # Returns
     ///
     /// A [`GroupKey`] for the set of participants.
-    pub(crate) fn calculate_group_key(&self, my_commitment: &RistrettoPoint) -> Result<GroupKey, ()> {
-        let mut keys: Vec<RistrettoPoint> = Vec::with_capacity(self.state.parameters.n as usize);
+    pub(crate) fn calculate_group_key(&self, my_commitment: &AffinePoint) -> Result<GroupKey, ()> {
+        let mut keys: Vec<ProjectivePoint> = Vec::with_capacity(self.state.parameters.n as usize);
 
         for commitment in self.state.their_commitments.iter() {
             match commitment.1.0.get(0) {
@@ -669,9 +670,9 @@ impl DistributedKeyGeneration<RoundTwo> {
                 None => return Err(()),
             }
         }
-        keys.push(*my_commitment);
+        let key = keys.iter().fold(ProjectivePoint::IDENTITY, |acc, k| acc + k) + my_commitment;
 
-        Ok(GroupKey(keys.iter().sum()))
+        Ok(GroupKey(key.to_affine()))
     }
 }
 
@@ -684,7 +685,7 @@ pub struct IndividualPublicKey {
     /// The participant index to which this key belongs.
     pub index: u32,
     /// The public verification share.
-    pub share: RistrettoPoint,
+    pub share: AffinePoint,
 }
 
 impl IndividualPublicKey {
@@ -712,10 +713,10 @@ impl IndividualPublicKey {
     pub fn verify(
         &self,
         parameters: &Parameters,
-        commitments: &[RistrettoPoint],
+        commitments: &[ProjectivePoint],
     ) -> Result<(), ()>
     {
-        let rhs = RistrettoPoint::identity();
+        let rhs = ProjectivePoint::IDENTITY;
 
         for j in 1..parameters.n {
             for k in 0..parameters.t {
@@ -739,11 +740,11 @@ pub struct SecretKey {
 impl SecretKey {
     /// Derive the corresponding public key for this secret key.
     pub fn to_public(&self) -> IndividualPublicKey {
-        let share = &RISTRETTO_BASEPOINT_TABLE * &self.key;
+        let share = AffinePoint::GENERATOR * &self.key;
 
         IndividualPublicKey {
             index: self.index,
-            share,
+            share: share.to_affine(),
         }
     }
 }
@@ -756,30 +757,30 @@ impl From<&SecretKey> for IndividualPublicKey {
 
 /// A public key, used to verify a signature made by a threshold of a group of participants.
 #[derive(Clone, Copy, Debug, Eq)]
-pub struct GroupKey(pub(crate) RistrettoPoint);
+pub struct GroupKey(pub(crate) AffinePoint);
 
 impl PartialEq for GroupKey {
     fn eq(&self, other: &Self) -> bool {
-        self.0.compress() == other.0.compress()
+        self.0.to_bytes() == other.0.to_bytes()
     }
 }
 
 impl GroupKey {
     /// Serialise this group public key to an array of bytes.
-    pub fn to_bytes(&self) -> [u8; 32] {
-        self.0.compress().to_bytes()
+    pub fn to_bytes(&self) -> CompressedPoint {
+        self.0.to_bytes()
     }
 
     /// Deserialise this group public key from an array of bytes.
-    pub fn from_bytes(bytes: [u8; 32]) -> Result<GroupKey, ()> {
-        let point = CompressedRistretto(bytes).decompress().ok_or(())?;
-
-        Ok(GroupKey(point))
+    pub fn from_bytes(bytes: CompressedPoint) -> Option<GroupKey> {
+        AffinePoint::from_bytes(&bytes).map(|p| GroupKey(p)).into()
     }
 }
 
 #[cfg(test)]
 mod test {
+    use k256::elliptic_curve::group::GroupEncoding;
+
     use super::*;
 
     #[cfg(feature = "std")]
@@ -794,7 +795,7 @@ mod test {
     /// Reconstruct the secret from enough (at least the threshold) already-verified shares.
     fn reconstruct_secret(participants: &Vec<&DealtParticipant>) -> Result<Scalar, &'static str> {
         let all_participant_indices: Vec<u32> = participants.iter().map(|p| p.public_key.index).collect();
-        let mut secret = Scalar::zero();
+        let mut secret = Scalar::ZERO;
 
         for this_participant in participants {
             let my_coeff = calculate_lagrange_coefficients(&this_participant.public_key.index,
@@ -809,7 +810,7 @@ mod test {
     fn nizk_of_secret_key() {
         let params = Parameters { n: 3, t: 2 };
         let (p, _) = Participant::new(&params, 0);
-        let result = p.proof_of_secret_key.verify(&p.index, &p.commitments[0]);
+        let result = p.proof_of_secret_key.verify(&p.index, &p.commitments[0].to_affine());
 
         assert!(result.is_ok());
     }
@@ -910,18 +911,18 @@ mod test {
         let mut coeffs: Vec<Scalar> = Vec::new();
 
         for _ in 0..5 {
-            coeffs.push(Scalar::one());
+            coeffs.push(Scalar::ONE);
         }
 
         let coefficients = Coefficients(coeffs);
         let share = SecretShare::evaluate_polynomial(&1, &coefficients);
 
-        assert!(share.polynomial_evaluation == Scalar::from(5u8));
+        assert!(share.polynomial_evaluation == Scalar::from(5u32));
 
         let mut commitments = VerifiableSecretSharingCommitment(Vec::new());
 
         for i in 0..5 {
-            commitments.0.push(&RISTRETTO_BASEPOINT_TABLE * &coefficients.0[i]);
+            commitments.0.push(AffinePoint::GENERATOR * &coefficients.0[i]);
         }
 
         assert!(share.verify(&commitments).is_ok());
@@ -932,18 +933,18 @@ mod test {
         let mut coeffs: Vec<Scalar> = Vec::new();
 
         for _ in 0..5 {
-            coeffs.push(Scalar::one());
+            coeffs.push(Scalar::ONE);
         }
 
         let coefficients = Coefficients(coeffs);
         let share = SecretShare::evaluate_polynomial(&0, &coefficients);
 
-        assert!(share.polynomial_evaluation == Scalar::one());
+        assert!(share.polynomial_evaluation == Scalar::ONE);
 
         let mut commitments = VerifiableSecretSharingCommitment(Vec::new());
 
         for i in 0..5 {
-            commitments.0.push(&RISTRETTO_BASEPOINT_TABLE * &coefficients.0[i]);
+            commitments.0.push(AffinePoint::GENERATOR * &coefficients.0[i]);
         }
 
         assert!(share.verify(&commitments).is_ok());
@@ -955,7 +956,7 @@ mod test {
 
         let (p1, p1coeffs) = Participant::new(&params, 1);
 
-        p1.proof_of_secret_key.verify(&p1.index, &p1.commitments[0]).unwrap();
+        p1.proof_of_secret_key.verify(&p1.index, &p1.commitments[0].to_affine()).unwrap();
 
         let mut p1_other_participants: Vec<Participant> = Vec::new();
         let p1_state = DistributedKeyGeneration::<RoundOne>::new(&params,
@@ -964,13 +965,13 @@ mod test {
                                                                  &mut p1_other_participants).unwrap();
         let p1_my_secret_shares = Vec::new();
         let p1_state = p1_state.to_round_two(p1_my_secret_shares).unwrap();
-        let result = p1_state.finish(p1.public_key().unwrap());
+        let result = p1_state.finish(&p1.public_key().unwrap());
 
         assert!(result.is_ok());
 
         let (p1_group_key, p1_secret_key) = result.unwrap();
 
-        assert!(p1_group_key.0.compress() == (&p1_secret_key.key * &RISTRETTO_BASEPOINT_TABLE).compress());
+        assert!(p1_group_key.0.to_bytes() == (AffinePoint::GENERATOR * &p1_secret_key.key).to_bytes());
     }
 
     #[test]
@@ -1055,23 +1056,23 @@ mod test {
         let p4_state = p4_state.to_round_two(p4_my_secret_shares).unwrap();
         let p5_state = p5_state.to_round_two(p5_my_secret_shares).unwrap();
 
-        let (p1_group_key, _p1_secret_key) = p1_state.finish(p1.public_key().unwrap()).unwrap();
-        let (p2_group_key, _p2_secret_key) = p2_state.finish(p2.public_key().unwrap()).unwrap();
-        let (p3_group_key, _p3_secret_key) = p3_state.finish(p3.public_key().unwrap()).unwrap();
-        let (p4_group_key, _p4_secret_key) = p4_state.finish(p4.public_key().unwrap()).unwrap();
-        let (p5_group_key, _p5_secret_key) = p5_state.finish(p5.public_key().unwrap()).unwrap();
+        let (p1_group_key, _p1_secret_key) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+        let (p2_group_key, _p2_secret_key) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
+        let (p3_group_key, _p3_secret_key) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
+        let (p4_group_key, _p4_secret_key) = p4_state.finish(&p4.public_key().unwrap()).unwrap();
+        let (p5_group_key, _p5_secret_key) = p5_state.finish(&p5.public_key().unwrap()).unwrap();
 
-        assert!(p1_group_key.0.compress() == p2_group_key.0.compress());
-        assert!(p2_group_key.0.compress() == p3_group_key.0.compress());
-        assert!(p3_group_key.0.compress() == p4_group_key.0.compress());
-        assert!(p4_group_key.0.compress() == p5_group_key.0.compress());
+        assert!(p1_group_key.0.to_bytes() == p2_group_key.0.to_bytes());
+        assert!(p2_group_key.0.to_bytes() == p3_group_key.0.to_bytes());
+        assert!(p3_group_key.0.to_bytes() == p4_group_key.0.to_bytes());
+        assert!(p4_group_key.0.to_bytes() == p5_group_key.0.to_bytes());
 
-        assert!(p5_group_key.0.compress() ==
-                (p1.public_key().unwrap() +
+        assert!(p5_group_key.0.to_bytes() ==
+                (ProjectivePoint::from(p1.public_key().unwrap()) +
                  p2.public_key().unwrap() +
                  p3.public_key().unwrap() +
                  p4.public_key().unwrap() +
-                 p5.public_key().unwrap()).compress());
+                 p5.public_key().unwrap()).to_affine().to_bytes());
     }
 
 
@@ -1120,12 +1121,12 @@ mod test {
             let p2_state = p2_state.to_round_two(p2_my_secret_shares)?;
             let p3_state = p3_state.to_round_two(p3_my_secret_shares)?;
 
-            let (p1_group_key, _p1_secret_key) = p1_state.finish(p1.public_key().unwrap())?;
-            let (p2_group_key, _p2_secret_key) = p2_state.finish(p2.public_key().unwrap())?;
-            let (p3_group_key, _p3_secret_key) = p3_state.finish(p3.public_key().unwrap())?;
+            let (p1_group_key, _p1_secret_key) = p1_state.finish(&p1.public_key().unwrap())?;
+            let (p2_group_key, _p2_secret_key) = p2_state.finish(&p2.public_key().unwrap())?;
+            let (p3_group_key, _p3_secret_key) = p3_state.finish(&p3.public_key().unwrap())?;
 
-            assert!(p1_group_key.0.compress() == p2_group_key.0.compress());
-            assert!(p2_group_key.0.compress() == p3_group_key.0.compress());
+            assert!(p1_group_key.0.to_bytes() == p2_group_key.0.to_bytes());
+            assert!(p2_group_key.0.to_bytes() == p3_group_key.0.to_bytes());
 
             Ok(())
         }

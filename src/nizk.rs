@@ -9,15 +9,18 @@
 
 //! Zero-knowledge proofs.
 
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
-use curve25519_dalek::ristretto::RistrettoPoint;
-use curve25519_dalek::scalar::Scalar;
 
+use k256::AffinePoint;
+use k256::ProjectivePoint;
+use k256::Scalar;
+
+use k256::elliptic_curve::Field;
+use k256::elliptic_curve::PrimeField;
+use k256::elliptic_curve::group::GroupEncoding;
 use rand::CryptoRng;
 use rand::Rng;
-
-use sha2::Digest;
-use sha2::Sha512;
+use sha3::Digest;
+use sha3::Keccak256;
 
 /// A proof of knowledge of a secret key, created by making a Schnorr signature
 /// with the secret key.
@@ -46,38 +49,38 @@ impl NizkOfSecretKey {
     pub fn prove(
         index: &u32,
         secret_key: &Scalar,
-        public_key: &RistrettoPoint,
+        public_key: &AffinePoint,
         mut csprng: impl Rng + CryptoRng,
     ) -> Self
     {
         let k: Scalar = Scalar::random(&mut csprng);
-        let M: RistrettoPoint = &k * &RISTRETTO_BASEPOINT_TABLE;
+        let M: ProjectivePoint = AffinePoint::GENERATOR * &k;
 
-        let mut hram = Sha512::new();
+        let mut hram = Keccak256::default();
 
-        hram.update(index.to_be_bytes());
-        hram.update("Φ");
-        hram.update(public_key.compress().as_bytes());
-        hram.update(M.compress().as_bytes());
+        hram.update(&index.to_be_bytes());
+        hram.update(b"\xCE\xA6");
+        hram.update(&public_key.to_bytes());
+        hram.update(&M.to_affine().to_bytes());
 
-        let s = Scalar::from_hash(hram);
-        let r = k + (secret_key * s);
+        let s = Scalar::from_repr(hram.finalize()).unwrap();
+        let r = k + (secret_key * &s);
 
         NizkOfSecretKey { s, r }
     }
 
     /// Verify that the prover does indeed know the secret key.
-    pub fn verify(&self, index: &u32, public_key: &RistrettoPoint) -> Result<(), ()> {
-        let M_prime: RistrettoPoint = (&RISTRETTO_BASEPOINT_TABLE * &self.r) + (public_key * -&self.s);
+    pub fn verify(&self, index: &u32, public_key: &AffinePoint) -> Result<(), ()> {
+        let M_prime: ProjectivePoint = (AffinePoint::GENERATOR * &self.r) + (*public_key * &-self.s);
 
-        let mut hram = Sha512::new();
+        let mut hram = Keccak256::default();
 
-        hram.update(index.to_be_bytes());
-        hram.update("Φ");
-        hram.update(public_key.compress().as_bytes());
-        hram.update(M_prime.compress().as_bytes());
+        hram.update(&index.to_be_bytes());
+        hram.update(b"\xCE\xA6");
+        hram.update(&public_key.to_bytes());
+        hram.update(&M_prime.to_affine().to_bytes());
 
-        let s_prime = Scalar::from_hash(hram);
+        let s_prime = Scalar::from_repr(hram.finalize()).unwrap();
 
         if self.s == s_prime {
             return Ok(());

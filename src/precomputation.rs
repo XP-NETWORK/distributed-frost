@@ -15,11 +15,12 @@ use std::vec::Vec;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
-use curve25519_dalek::ristretto::RistrettoPoint;
-use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::traits::Identity;
+use k256::AffinePoint;
+use k256::Scalar;
 
+
+use k256::elliptic_curve::Field;
+use k256::elliptic_curve::group::GroupEncoding;
 use rand::CryptoRng;
 use rand::Rng;
 
@@ -40,17 +41,17 @@ impl NoncePair {
 
 impl From<NoncePair> for CommitmentShare {
     fn from(other: NoncePair) -> CommitmentShare {
-        let x = &RISTRETTO_BASEPOINT_TABLE * &other.0;
-        let y = &RISTRETTO_BASEPOINT_TABLE * &other.1;
+        let x = AffinePoint::GENERATOR * &other.0;
+        let y = AffinePoint::GENERATOR * &other.1;
 
         CommitmentShare {
             hiding: Commitment {
                 nonce: other.0,
-                sealed: x,
+                sealed: x.to_affine(),
             },
             binding: Commitment {
                 nonce: other.1,
-                sealed: y,
+                sealed: y.to_affine(),
             },
         }
     }
@@ -62,13 +63,13 @@ pub(crate) struct Commitment {
     /// The nonce.
     pub(crate) nonce: Scalar,
     /// The commitment.
-    pub(crate) sealed: RistrettoPoint,
+    pub(crate) sealed: AffinePoint,
 }
 
 impl Zeroize for Commitment {
     fn zeroize(&mut self) {
         self.nonce.zeroize();
-        self.sealed = RistrettoPoint::identity();
+        self.sealed = AffinePoint::IDENTITY;
     }
 }
 
@@ -82,7 +83,7 @@ impl Drop for Commitment {
 impl ConstantTimeEq for Commitment {
     fn ct_eq(&self, other: &Commitment) -> Choice {
         self.nonce.ct_eq(&other.nonce) &
-            self.sealed.compress().ct_eq(&other.sealed.compress())
+            self.sealed.to_bytes().ct_eq(&other.sealed.to_bytes())
     }
 }
 
@@ -109,7 +110,7 @@ impl ConstantTimeEq for CommitmentShare {
 
 impl CommitmentShare {
     /// Publish the public commitments in this [`CommitmentShare`].
-    pub fn publish(&self) -> (RistrettoPoint, RistrettoPoint) {
+    pub fn publish(&self) -> (AffinePoint, AffinePoint) {
         (self.hiding.sealed, self.binding.sealed)
     }
 }
@@ -132,7 +133,7 @@ pub struct PublicCommitmentShareList {
     /// The participant's index.
     pub participant_index: u32,
     /// The published commitments.
-    pub commitments: Vec<(RistrettoPoint, RistrettoPoint)>,
+    pub commitments: Vec<(AffinePoint, AffinePoint)>,
 }
 
 /// Pre-compute a list of [`CommitmentShare`]s for single-round threshold signing.
@@ -158,7 +159,7 @@ pub fn generate_commitment_share_lists(
         commitments.push(CommitmentShare::from(NoncePair::new(&mut csprng)));
     }
 
-    let mut published: Vec<(RistrettoPoint, RistrettoPoint)> = Vec::with_capacity(number_of_shares);
+    let mut published: Vec<(AffinePoint, AffinePoint)> = Vec::with_capacity(number_of_shares);
 
     for commitment in commitments.iter() {
         published.push(commitment.publish());
@@ -214,8 +215,8 @@ mod test {
     fn commitment_share_list_generate() {
         let (public_share_list, secret_share_list) = generate_commitment_share_lists(&mut OsRng, 0, 5);
 
-        assert_eq!(public_share_list.commitments[0].0.compress(),
-                   (&secret_share_list.commitments[0].hiding.nonce * &RISTRETTO_BASEPOINT_TABLE).compress());
+        assert_eq!(public_share_list.commitments[0].0.to_bytes(),
+                   (AffinePoint::GENERATOR * &secret_share_list.commitments[0].hiding.nonce).to_affine().to_bytes());
     }
 
     #[test]

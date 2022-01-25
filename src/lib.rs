@@ -365,9 +365,9 @@
 //! # let bob_state = bob_state.to_round_two(bob_my_secret_shares)?;
 //! # let carol_state = carol_state.to_round_two(carol_my_secret_shares)?;
 //! #
-//! let (alice_group_key, alice_secret_key) = alice_state.finish(alice.public_key().unwrap())?;
-//! let (bob_group_key, bob_secret_key) = bob_state.finish(bob.public_key().unwrap())?;
-//! let (carol_group_key, carol_secret_key) = carol_state.finish(carol.public_key().unwrap())?;
+//! let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
+//! let (bob_group_key, bob_secret_key) = bob_state.finish(&bob.public_key().unwrap())?;
+//! let (carol_group_key, carol_secret_key) = carol_state.finish(&carol.public_key().unwrap())?;
 //!
 //! assert!(alice_group_key == bob_group_key);
 //! assert!(carol_group_key == bob_group_key);
@@ -431,9 +431,9 @@
 //! # let bob_state = bob_state.to_round_two(bob_my_secret_shares)?;
 //! # let carol_state = carol_state.to_round_two(carol_my_secret_shares)?;
 //! #
-//! # let (alice_group_key, alice_secret_key) = alice_state.finish(alice.public_key().unwrap())?;
-//! # let (bob_group_key, bob_secret_key) = bob_state.finish(bob.public_key().unwrap())?;
-//! # let (carol_group_key, carol_secret_key) = carol_state.finish(carol.public_key().unwrap())?;
+//! # let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
+//! # let (bob_group_key, bob_secret_key) = bob_state.finish(&bob.public_key().unwrap())?;
+//! # let (carol_group_key, carol_secret_key) = carol_state.finish(&carol.public_key().unwrap())?;
 //! #
 //! # let alice_public_key = alice_secret_key.to_public();
 //! # let bob_public_key = bob_secret_key.to_public();
@@ -510,9 +510,9 @@
 //! # let bob_state = bob_state.to_round_two(bob_my_secret_shares)?;
 //! # let carol_state = carol_state.to_round_two(carol_my_secret_shares)?;
 //! #
-//! # let (alice_group_key, alice_secret_key) = alice_state.finish(alice.public_key().unwrap())?;
-//! # let (bob_group_key, bob_secret_key) = bob_state.finish(bob.public_key().unwrap())?;
-//! # let (carol_group_key, carol_secret_key) = carol_state.finish(carol.public_key().unwrap())?;
+//! # let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
+//! # let (bob_group_key, bob_secret_key) = bob_state.finish(&bob.public_key().unwrap())?;
+//! # let (carol_group_key, carol_secret_key) = carol_state.finish(&carol.public_key().unwrap())?;
 //! #
 //! # let alice_public_key = alice_secret_key.to_public();
 //! # let bob_public_key = bob_secret_key.to_public();
@@ -592,9 +592,9 @@
 //! # let bob_state = bob_state.to_round_two(bob_my_secret_shares).or(Err(""))?;
 //! # let carol_state = carol_state.to_round_two(carol_my_secret_shares).or(Err(""))?;
 //! #
-//! # let (alice_group_key, alice_secret_key) = alice_state.finish(alice.public_key().unwrap()).or(Err(""))?;
-//! # let (bob_group_key, bob_secret_key) = bob_state.finish(bob.public_key().unwrap()).or(Err(""))?;
-//! # let (carol_group_key, carol_secret_key) = carol_state.finish(carol.public_key().unwrap()).or(Err(""))?;
+//! # let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap()).or(Err(""))?;
+//! # let (bob_group_key, bob_secret_key) = bob_state.finish(&bob.public_key().unwrap()).or(Err(""))?;
+//! # let (carol_group_key, carol_secret_key) = carol_state.finish(&carol.public_key().unwrap()).or(Err(""))?;
 //! #
 //! # let alice_public_key = alice_secret_key.to_public();
 //! # let bob_public_key = bob_secret_key.to_public();
@@ -704,6 +704,6 @@ pub use parameters::Parameters;
 pub use precomputation::generate_commitment_share_lists;
 
 #[cfg(feature = "std")]
-pub use signature::compute_message_hash;
+pub use crate::signature::compute_message_hash;
 #[cfg(feature = "std")]
-pub use signature::SignatureAggregator;
+pub use crate::signature::SignatureAggregator;
