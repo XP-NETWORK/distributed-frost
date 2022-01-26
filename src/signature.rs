@@ -19,6 +19,7 @@ use k256::ProjectivePoint;
 use k256::elliptic_curve::PrimeField;
 use k256::elliptic_curve::group::GroupEncoding;
 use k256::elliptic_curve::ops::LinearCombination;
+use k256::elliptic_curve::sec1::ToEncodedPoint;
 use sha3::Digest;
 use sha3::Keccak256;
 
@@ -203,32 +204,42 @@ fn compute_binding_factors_and_group_commitment(
 
     // [DIFFERENT_TO_PAPER] I added a context string and reordered to hash
     // constants like the message first.
-    h.update(b"FROST-KECCAK256");
+    //h.update(b"FROST-KECCAK256");
     h.update(&message_hash[..]);
 
     // [DIFFERENT_TO_PAPER] I added the set of participants (in the paper
     // B = <(i, D_{ij}, E_(ij))> i \E S) here to avoid rehashing them over and
     // over again.
     for signer in signers.iter() {
-        let hiding = signer.published_commitment_share.0;
-        let binding = signer.published_commitment_share.1;
+        let mut hiding = signer.published_commitment_share.0.to_bytes();
+        hiding[0] &= 1;
+        let mut binding = signer.published_commitment_share.1.to_bytes();
+        binding[0] &= 1;
 
         h.update(&signer.participant_index.to_be_bytes());
-        h.update(&hiding.to_bytes());
-        h.update(&binding.to_bytes());
+        h.update(&hiding[1..]);
+        h.update(&hiding[0..1]);
+        h.update(&binding[1..]);
+        h.update(&binding[0..1]);
     }
 
     for signer in signers.iter() {
         let hiding = signer.published_commitment_share.0;
+        let mut hiding_bytes = hiding.to_bytes();
+        hiding_bytes[0] &= 1;
         let binding = signer.published_commitment_share.1;
+        let mut binding_bytes = binding.to_bytes();
+        binding_bytes[0] &= 1;
 
         let mut h1 = h.clone();
 
         // [DIFFERENT_TO_PAPER] I put in the participant index last to finish
         // their unique calculation of rho.
         h1.update(&signer.participant_index.to_be_bytes());
-        h1.update(&hiding.to_bytes());
-        h1.update(&binding.to_bytes());
+        h1.update(&hiding_bytes[1..]);
+        h1.update(&hiding_bytes[0..1]);
+        h1.update(&binding_bytes[1..]);
+        h1.update(&binding_bytes[0..1]);
 
         let binding_factor = Scalar::from_repr(h1.finalize()).unwrap(); // This is rho in the paper.
 
@@ -239,17 +250,31 @@ fn compute_binding_factors_and_group_commitment(
     (binding_factors, Rs)
 }
 
+// [DIFFERENT_FROM_PAPER] H(Y | m | Addr(Y))
 fn compute_challenge(message_hash: &[u8; 32], group_key: &GroupKey, R: &AffinePoint) -> Scalar {
+    let mut h1 = Keccak256::default();
+    let enc = R.to_encoded_point(false).to_bytes();
+    h1.update(&enc[1..33]);
+    h1.update(&enc[33..]);
+    let nonceGenPub = h1.finalize();
+
     let mut h2 = Keccak256::default();
 
     // XXX [PAPER] Decide if we want a context string for the challenge.  This
     // would break compatibility with standard ed25519 libraries for verification.
-    h2.update(b"FROST-KECCAK256");
-    h2.update(&R.to_bytes());
-    h2.update(&group_key.to_bytes());
-    h2.update(&message_hash[..]);
+    //h2.update(b"FROST-KECCAK256");
 
-    Scalar::from_repr(h2.finalize()).unwrap()
+    let mut gk_comp = group_key.to_bytes();
+    gk_comp[0] &= 1;
+
+    h2.update(&gk_comp[1..]);
+    h2.update(&gk_comp[0..1]);
+    h2.update(&message_hash[..]);
+    h2.update(&nonceGenPub[12..]);
+
+    let res = h2.finalize();
+
+    Scalar::from_repr(res).unwrap()
 }
 
 /// Calculate using Lagrange's method the interpolation of a polynomial.
@@ -333,8 +358,8 @@ impl SecretKey {
         let lambda: Scalar = calculate_lagrange_coefficients(&self.index, &all_participant_indices)?;
         let my_commitment_share = my_secret_commitment_share_list.commitments[my_commitment_share_index].clone();
         let z = my_commitment_share.hiding.nonce +
-            (my_commitment_share.binding.nonce * my_binding_factor) +
-            (lambda * self.key * challenge);
+            (my_commitment_share.binding.nonce * my_binding_factor) -
+            (lambda * self.key * challenge); // [DIFFERENT_TO_PAPER] this term is positive in the paper.
 
         // [DIFFERENT_TO_PAPER] We need to instead pass in the commitment
         // share list and zero-out the used commitment share, which means the
@@ -616,7 +641,8 @@ impl SignatureAggregator<Finalized> {
             // participant indexes against the expected ones in finalize().
             let R_i = Rs.get(&signer.participant_index).unwrap();
 
-            if check == (*Y_i * (c * lambda)) + R_i {
+            // [DIFFERENT_TO_PAPER] c * lambda is positive in the paper
+            if check == (*Y_i * (-c * lambda)) + R_i {
                 z += partial_sig;
             } else {
                 // XXX We don't really need the error string anymore, since there's only one failure mode.
@@ -641,7 +667,8 @@ impl ThresholdSignature {
     /// of any misbehaving participants.
     pub fn verify(&self, group_key: &GroupKey, message_hash: &[u8; 32]) -> Result<(), ()> {
         let c_prime = compute_challenge(&message_hash, &group_key, &self.R);
-        let R_prime = ProjectivePoint::lincomb(&(-group_key.0).into(), &c_prime, &ProjectivePoint::GENERATOR, &self.z);
+        // [DIFFERENT_TO_PAPER] modified schnorr
+        let R_prime = ProjectivePoint::lincomb(&(group_key.0).into(), &c_prime, &ProjectivePoint::GENERATOR, &self.z);
 
         match self.R.to_bytes() == R_prime.to_affine().to_bytes() {
             true => Ok(()),
