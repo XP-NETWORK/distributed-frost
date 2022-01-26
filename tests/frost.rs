@@ -13,19 +13,19 @@
 use rand::rngs::OsRng;
 
 #[cfg(feature = "std")]
-use frost_dalek::compute_message_hash;
+use frost_secp256k1::compute_message_hash;
 #[cfg(feature = "std")]
-use frost_dalek::generate_commitment_share_lists;
+use frost_secp256k1::generate_commitment_share_lists;
 
 #[cfg(feature = "std")]
-use frost_dalek::DistributedKeyGeneration;
+use frost_secp256k1::DistributedKeyGeneration;
 #[cfg(feature = "std")]
-use frost_dalek::Parameters;
+use frost_secp256k1::Parameters;
 #[cfg(feature = "std")]
-use frost_dalek::Participant;
+use frost_secp256k1::Participant;
 
 #[cfg(feature = "std")]
-use frost_dalek::SignatureAggregator;
+use frost_secp256k1::SignatureAggregator;
 
 #[cfg(feature = "std")]
 #[test]
@@ -142,7 +142,7 @@ fn signing_and_verification_3_out_of_5() {
 
 #[cfg(feature = "std")]
 #[test]
-fn signing_and_verification_with_schnorr_dalek_2_out_of_3() {
+fn signing_and_verification_with_schnorr_bip340_2_out_of_3() {
     use secp256k1::{Secp256k1, schnorr::Signature, Message, XOnlyPublicKey};
 
     let params = Parameters { n: 3, t: 2 };

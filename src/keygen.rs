@@ -62,9 +62,9 @@
 //! # Examples
 //!
 //! ```rust
-//! use frost_dalek::DistributedKeyGeneration;
-//! use frost_dalek::Parameters;
-//! use frost_dalek::Participant;
+//! use frost_secp256k1::DistributedKeyGeneration;
+//! use frost_secp256k1::Parameters;
+//! use frost_secp256k1::Participant;
 //!
 //! # fn do_test() -> Result<(), ()> {
 //! // Set up key shares for a threshold signature scheme which needs at least

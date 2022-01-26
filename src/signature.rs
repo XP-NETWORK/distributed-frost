@@ -18,6 +18,7 @@ use k256::FieldBytes;
 use k256::ProjectivePoint;
 use k256::elliptic_curve::PrimeField;
 use k256::elliptic_curve::group::GroupEncoding;
+use k256::elliptic_curve::ops::LinearCombination;
 use sha3::Digest;
 use sha3::Keccak256;
 
@@ -640,7 +641,7 @@ impl ThresholdSignature {
     /// of any misbehaving participants.
     pub fn verify(&self, group_key: &GroupKey, message_hash: &[u8; 32]) -> Result<(), ()> {
         let c_prime = compute_challenge(&message_hash, &group_key, &self.R);
-        let R_prime  = -group_key.0 * c_prime + AffinePoint::GENERATOR * self.z;
+        let R_prime = ProjectivePoint::lincomb(&(-group_key.0).into(), &c_prime, &ProjectivePoint::GENERATOR, &self.z);
 
         match self.R.to_bytes() == R_prime.to_affine().to_bytes() {
             true => Ok(()),

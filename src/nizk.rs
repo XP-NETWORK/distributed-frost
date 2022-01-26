@@ -27,7 +27,7 @@ use sha3::Keccak256;
 ///
 /// This proof is created by making a pseudo-Schnorr signature,
 /// \\( \sigma\_i = (s\_i, r\_i) \\) using \\( a\_{i0} \\) (from
-/// `frost_dalek::keygen::DistributedKeyGeneration::<RoundOne>::compute_share`)
+/// `frost_secp256k1::keygen::DistributedKeyGeneration::<RoundOne>::compute_share`)
 /// as the secret key, such that \\( k \stackrel{\\$}{\leftarrow} \mathbb{Z}\_q \\),
 /// \\( M\_i = g^k \\), \\( s\_i = \mathcal{H}(i, \phi, g^{a\_{i0}}, M\_i) \\),
 /// \\( r\_i = k + a\_{i0} \cdot s\_i \\).

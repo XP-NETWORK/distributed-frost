@@ -37,7 +37,7 @@
 //! signature.
 //!
 //! ```rust
-//! use frost_dalek::Parameters;
+//! use frost_secp256k1::Parameters;
 //!
 //! let params = Parameters { t: 2, n: 3 };
 //! ```
@@ -52,8 +52,8 @@
 //! `3` in the following examples).
 //! 
 //! ```rust
-//! # use frost_dalek::Parameters;
-//! use frost_dalek::Participant;
+//! # use frost_secp256k1::Parameters;
+//! use frost_secp256k1::Participant;
 //! #
 //! # let params = Parameters { t: 2, n: 3 };
 //! 
@@ -81,8 +81,8 @@
 //! Bob and Carol verify Alice's zero-knowledge proof by doing:
 //!
 //! ```rust
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -98,8 +98,8 @@
 //! Similarly, Alice and Carol verify Bob's proof:
 //!
 //! ```rust
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -115,8 +115,8 @@
 //! And, again, Alice and Bob verify Carol's proof:
 //!
 //! ```rust
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -132,9 +132,9 @@
 //! Alice enters round one of the distributed key generation protocol:
 //!
 //! ```rust
-//! use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), Vec<u32>> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -152,9 +152,9 @@
 //! Alice then collects the secret shares which they send to the other participants:
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -176,9 +176,9 @@
 //! Bob and Carol each do the same:
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), Vec<u32>> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -212,9 +212,9 @@
 //! and
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), Vec<u32>> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -248,9 +248,9 @@
 //! Each participant now has a vector of secret shares given to them by the other participants:
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -286,9 +286,9 @@
 //! round two of the distributed key generation protocol.
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -329,9 +329,9 @@
 //! also derive their [`IndividualPublicKey`]s from their [`IndividualSecretKey`]s.
 //!
 //! ```rust
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! #
 //! # fn do_test() -> Result<(), ()> {
 //! # let params = Parameters { t: 2, n: 3 };
@@ -388,14 +388,14 @@
 //!
 //! ```rust
 //! # #[cfg(feature = "std")]
-//! use frost_dalek::compute_message_hash;
+//! use frost_secp256k1::compute_message_hash;
 //! # #[cfg(feature = "std")]
-//! use frost_dalek::generate_commitment_share_lists;
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! use frost_secp256k1::generate_commitment_share_lists;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! # #[cfg(feature = "std")]
-//! use frost_dalek::SignatureAggregator;
+//! use frost_secp256k1::SignatureAggregator;
 //!
 //! use rand::rngs::OsRng;
 //! # #[cfg(feature = "std")]
@@ -465,15 +465,15 @@
 //!
 //! ```rust
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::compute_message_hash;
+//! # use frost_secp256k1::compute_message_hash;
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::generate_commitment_share_lists;
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::IndividualPublicKey;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::generate_commitment_share_lists;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::IndividualPublicKey;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::SignatureAggregator;
+//! # use frost_secp256k1::SignatureAggregator;
 //! #
 //! # use rand::rngs::OsRng;
 //! #
@@ -548,14 +548,14 @@
 //!
 //! ```rust
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::compute_message_hash;
+//! # use frost_secp256k1::compute_message_hash;
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::generate_commitment_share_lists;
-//! # use frost_dalek::DistributedKeyGeneration;
-//! # use frost_dalek::Parameters;
-//! # use frost_dalek::Participant;
+//! # use frost_secp256k1::generate_commitment_share_lists;
+//! # use frost_secp256k1::DistributedKeyGeneration;
+//! # use frost_secp256k1::Parameters;
+//! # use frost_secp256k1::Participant;
 //! # #[cfg(feature = "std")]
-//! # use frost_dalek::SignatureAggregator;
+//! # use frost_secp256k1::SignatureAggregator;
 //! #
 //! # use rand::rngs::OsRng;
 //! #
