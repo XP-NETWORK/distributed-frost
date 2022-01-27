@@ -5,6 +5,8 @@ A Rust implementation of
 [FROST: Flexible Round-Optimised Schnorr Threshold signatures](https://eprint.iacr.org/2020/852)
 by Chelsea Komlo and Ian Goldberg.
 
+Modified for [EthSchnorr](https://github.com/smartcontractkit/chainlink/blob/v1.0.1/contracts/src/v0.5/dev/SchnorrSECP256K1.sol) with SECP256k1 EC.
+
 ## Usage
 
 Please see [the documentation](https://docs.rs/frost-dalek) for usage examples.
