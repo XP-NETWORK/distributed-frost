@@ -36,4 +36,4 @@ harness = false
 default = ["std"]
 
 std = ["k256/std"]
-alloc = []
+alloc = ["zeroize/alloc"]
