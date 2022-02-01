@@ -23,14 +23,16 @@ use k256::elliptic_curve::sec1::ToEncodedPoint;
 use sha3::Digest;
 use sha3::Keccak256;
 
+use core::cmp::Ordering;
+
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 #[cfg(feature = "std")]
 use std::collections::hash_map::Values;
 #[cfg(feature = "std")]
-use std::cmp::Ordering;
-#[cfg(feature = "std")]
 use std::vec::Vec;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 use k256::CompressedPoint;
 use k256::AffinePoint;
@@ -117,6 +119,7 @@ impl ThresholdSignature {
     }
 }
 
+#[cfg(feature = "std")]
 macro_rules! impl_indexed_hashmap {
     (Type = $type:ident, Item = $item:ident) => {
 
@@ -161,23 +164,29 @@ impl $type {
 //
 // XXX TODO there might be a more efficient way to optimise this data structure
 //     and its algorithms?
+#[cfg(feature = "std")]
 #[derive(Debug)]
 struct SignerRs(pub(crate) HashMap<[u8; 4], AffinePoint>);
 
+#[cfg(feature = "std")]
 impl_indexed_hashmap!(Type = SignerRs, Item = AffinePoint);
 
 /// A type for storing signers' partial threshold signatures along with the
 /// respective signer participant index.
+#[cfg(feature = "std")]
 #[derive(Debug)]
 pub(crate) struct PartialThresholdSignatures(pub(crate) HashMap<[u8; 4], Scalar>);
 
+#[cfg(feature = "std")]
 impl_indexed_hashmap!(Type = PartialThresholdSignatures, Item = Scalar);
 
 /// A type for storing signers' individual public keys along with the respective
 /// signer participant index.
+#[cfg(feature = "std")]
 #[derive(Debug)]
 pub(crate) struct IndividualPublicKeys(pub(crate) HashMap<[u8; 4], AffinePoint>);
 
+#[cfg(feature = "std")]
 impl_indexed_hashmap!(Type = IndividualPublicKeys, Item = AffinePoint);
 
 /// Compute a Keccak256 hash of am abi-encoded `context_string` and a `message`.
@@ -190,6 +199,7 @@ pub fn compute_message_hash(context_string: &[u8], message: &[u8]) -> [u8; 32] {
     h.finalize().into()
 }
 
+#[cfg(feature = "std")]
 fn compute_binding_factors_and_group_commitment(
     message_hash: &[u8; 32],
     signers: &[Signer],
@@ -335,6 +345,7 @@ impl SecretKey {
     /// A Result whose `Ok` value contains a [`PartialThresholdSignature`], which
     /// should be sent to the [`SignatureAggregator`].  Otherwise, its `Err` value contains
     /// a string describing the error which occurred.
+    #[cfg(feature = "std")]
     pub fn sign(
         &self,
         message_hash: &[u8; 32],
@@ -382,6 +393,7 @@ impl SecretKey {
 pub trait Aggregator {}
 
 /// The internal state of a signature aggregator.
+#[cfg(feature = "std")]
 #[derive(Debug)]
 pub(crate) struct AggregatorState {
     /// The protocol instance parameters.
@@ -402,6 +414,7 @@ pub(crate) struct AggregatorState {
 /// [`PartialThresholdSignature`] and creates the final [`ThresholdSignature`].
 /// The signature aggregator may even be one of the \\(t\\) participants in this
 /// signing operation.
+#[cfg(feature = "std")]
 #[derive(Debug)]
 pub struct SignatureAggregator<A: Aggregator> {
     /// The aggregator's actual state, shared across types.
@@ -444,6 +457,7 @@ pub struct Finalized {
 
 impl Aggregator for Finalized {}
 
+#[cfg(feature = "std")]
 impl SignatureAggregator<Initial> {
     /// Construct a new signature aggregator from some protocol instantiation
     /// `parameters` and a `message` to be signed.
@@ -595,6 +609,7 @@ impl SignatureAggregator<Initial> {
     }
 }
 
+#[cfg(feature = "std")]
 impl SignatureAggregator<Finalized> {
     /// Aggregate a set of previously-collected partial signatures.
     ///
@@ -677,6 +692,7 @@ impl ThresholdSignature {
     }
 }
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
     use super::*;

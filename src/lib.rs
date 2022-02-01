@@ -692,7 +692,6 @@ pub mod nizk;
 
 // The signing protocol uses Hashmap (currently for both the signature aggregator
 // and signers), which requires std.
-#[cfg(feature = "std")]
 pub mod signature;
 
 pub use keygen::DistributedKeyGeneration;
@@ -702,6 +701,7 @@ pub use keygen::Participant;
 pub use keygen::SecretKey as IndividualSecretKey;
 pub use parameters::Parameters;
 pub use precomputation::generate_commitment_share_lists;
+pub use signature::ThresholdSignature;
 
 #[cfg(feature = "std")]
 pub use crate::signature::compute_message_hash;
