@@ -183,8 +183,10 @@ use k256::AffinePoint;
 use k256::ProjectivePoint;
 use k256::Scalar;
 
+#[cfg(feature = "std")]
 use k256::elliptic_curve::Field;
 use k256::elliptic_curve::group::GroupEncoding;
+#[cfg(feature = "std")]
 use rand::rngs::OsRng;
 
 use zeroize::Zeroize;
@@ -241,6 +243,7 @@ impl Participant {
     /// identical.  Otherwise, the participants' secret shares could be formed
     /// with respect to different polynomials and they will fail to create
     /// threshold signatures which validate.
+    #[cfg(feature = "std")]
     pub fn dealer(parameters: &Parameters) -> (Vec<DealtParticipant>, VerifiableSecretSharingCommitment) {
         let rng: OsRng = OsRng;
         let secret = Scalar::random(OsRng);
@@ -266,6 +269,7 @@ impl Participant {
     /// A distributed key generation protocol [`Participant`] and that
     /// participant's secret polynomial `Coefficients` which must be kept
     /// private.
+    #[cfg(feature = "std")]
     pub fn new(parameters: &Parameters, index: u32) -> (Self, Coefficients) {
         // Step 1: Every participant P_i samples t random values (a_{i0}, ..., a_{i(t-1)})
         //         uniformly in ZZ_q, and uses these values as coefficients to define a
@@ -312,6 +316,7 @@ impl Participant {
     }
 }
 
+#[cfg(feature = "std")]
 fn generate_shares(parameters: &Parameters, secret: Scalar, mut rng: OsRng) -> (Vec<DealtParticipant>, VerifiableSecretSharingCommitment) {
     let mut participants: Vec<DealtParticipant> = Vec::with_capacity(parameters.n as usize);
 

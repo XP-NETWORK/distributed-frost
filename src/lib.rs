@@ -700,6 +700,7 @@ pub use keygen::IndividualPublicKey;
 pub use keygen::Participant;
 pub use keygen::SecretKey as IndividualSecretKey;
 pub use parameters::Parameters;
+#[cfg(feature = "std")]
 pub use precomputation::generate_commitment_share_lists;
 pub use signature::ThresholdSignature;
 

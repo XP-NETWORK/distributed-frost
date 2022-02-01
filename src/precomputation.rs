@@ -18,11 +18,11 @@ use alloc::vec::Vec;
 use k256::AffinePoint;
 use k256::Scalar;
 
-
+#[cfg(feature = "std")]
 use k256::elliptic_curve::Field;
 use k256::elliptic_curve::group::GroupEncoding;
-use rand::CryptoRng;
-use rand::Rng;
+#[cfg(feature = "std")]
+use rand::{CryptoRng, Rng};
 
 use subtle::Choice;
 use subtle::ConstantTimeEq;
@@ -34,6 +34,7 @@ use zeroize::Zeroize;
 pub(crate) struct NoncePair(pub(crate) Scalar, pub(crate) Scalar);
 
 impl NoncePair {
+    #[cfg(feature = "std")]
     pub fn new(mut csprng: impl CryptoRng + Rng) -> Self {
         NoncePair(Scalar::random(&mut csprng), Scalar::random(&mut csprng))
     }
@@ -147,6 +148,7 @@ pub struct PublicCommitmentShareList {
 /// # Returns
 ///
 /// A tuple of ([`PublicCommitmentShareList`], [`SecretCommitmentShareList`]).
+#[cfg(feature = "std")]
 pub fn generate_commitment_share_lists(
     mut csprng: impl CryptoRng + Rng,
     participant_index: u32,
@@ -195,6 +197,7 @@ impl SecretCommitmentShareList {
     }
 }
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
     use super::*;

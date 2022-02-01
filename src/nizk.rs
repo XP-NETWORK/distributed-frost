@@ -14,11 +14,12 @@ use k256::AffinePoint;
 use k256::ProjectivePoint;
 use k256::Scalar;
 
+#[cfg(feature = "std")]
 use k256::elliptic_curve::Field;
 use k256::elliptic_curve::PrimeField;
 use k256::elliptic_curve::group::GroupEncoding;
-use rand::CryptoRng;
-use rand::Rng;
+#[cfg(feature = "std")]
+use rand::{CryptoRng, Rng};
 use sha3::Digest;
 use sha3::Keccak256;
 
@@ -46,6 +47,7 @@ pub struct NizkOfSecretKey {
 
 impl NizkOfSecretKey {
     /// Prove knowledge of a secret key.
+    #[cfg(feature = "std")]
     pub fn prove(
         index: &u32,
         secret_key: &Scalar,

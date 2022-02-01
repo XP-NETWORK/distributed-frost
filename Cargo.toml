@@ -17,8 +17,8 @@ exclude = [ ".gitignore" ]
 rustdoc-args = ["--html-in-header", "/opt/rustwide/workdir/docs/assets/rustdoc-include-katex-header.html"]
 
 [dependencies]
-rand = { version = "0.8" }
-sha3 = { version = "0.10" }
+rand = { version = "0.8", optional = true }
+sha3 = { version = "0.10", default-features = false }
 subtle = { version = "2.4", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
 k256 = { version = "0.10.2", default-features = false, features = ["keccak256", "arithmetic"] }
@@ -36,5 +36,5 @@ harness = false
 [features]
 default = ["std"]
 
-std = ["k256/std"]
+std = ["k256/std", "rand"]
 alloc = ["zeroize/alloc", "sec1/alloc"]
