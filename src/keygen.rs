@@ -1108,8 +1108,7 @@ mod test {
             let proj1ect2=p1.commitments[1].to_bytes();
             println!("original projective point");
             println!("{:?}",p1.commitments);
-
-            let mut blaas1=k256::ProjectivePoint::from_bytes(&proj1ect1).unwrap();
+            let mut blaas1=k256::ProjectivePoint::from_bytes(&proj1ect1).unwrap(); 
             let mut blaas2=k256::ProjectivePoint::from_bytes(&proj1ect2).unwrap();
             p1.commitments.zeroize();
             p1.commitments.push(blaas1);
@@ -1122,10 +1121,12 @@ mod test {
             // println!("{:#?}",blaas2);
             let p1pub=p1.public_key().unwrap().to_bytes();
             p1.public_key().zeroize();
+            //let mut blaas1=k256::ProjectivePoint::from_bytes(&proj1ect1).unwrap();
             let resul=k256::AffinePoint::from_bytes(&p1pub).unwrap();
             p1.public_key().insert(resul);
             println!("public key from affine");
-            println!("{:#?}",p1.public_key().unwrap());let count=3;
+                       println!("{:#?}",p1.public_key().unwrap());let count=3;
+                       
             
             let mut p1_other_participants: Vec<Participant> = vec!(p2.clone(), p3.clone());
             let p1_state = DistributedKeyGeneration::<RoundOne>::new(&params,
@@ -1148,11 +1149,15 @@ mod test {
                                                                       &mut p3_other_participants).or(Err(()))?;
             let  p3_their_secret_shares: &Vec<SecretShare> = p3_state.their_secret_shares()?;
             let mut p3share=p3_their_secret_shares.clone();
-            let values1=bincode::serialize(&p3share[0]).unwrap();
-            let values2=bincode::serialize(&p3share[1]).unwrap();
+            let values1=bincode::serialize(&p3share[0]).unwrap(); // part1 of party3 vector
+            let values2=bincode::serialize(&p3share[1]).unwrap();// part2 of party3 vector
              // trying to convert bytes back to secret share
-             //p3_their_secret_shares[0].zeroize();
+            
+            //p3_their_secret_shares.zeroize();
+            //p3_their_secret_shares[0].zeroize();
              //p3_their_secret_shares[1].zeroize();
+             //p3_their_secret_shares.zeroize();
+            
              p3share[0].zeroize();
              //p3_their_secret_shares.pop();
              p3share[1].zeroize();
