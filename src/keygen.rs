@@ -1167,23 +1167,56 @@ mod test {
 
              p3share.push(value1back.unwrap());
              p3share.push(value2back.unwrap());
+             /* 
+             ////////////Copy p1 Secret shares to p1share///////////
+             /// Convert them to bytes
+             /// then convert them to Secret share
+             /// then convert them back to secret share and send these shares to others for computation
+             ///
+              */
+             let mut p1share=p1_their_secret_shares.clone();
+             let p1values1=bincode::serialize(&p1share[0]).unwrap(); // part1 of party1 vector
+             let p1values2=bincode::serialize(&p1share[1]).unwrap();// part2 of party1 vector
+             //p1share.zeroize();           
+              p1share[0].zeroize();
+              p1share[1].zeroize();
+ 
+              let p1value1back: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&p1values1.as_ref());
+              let p1value2back: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&p1values2.as_ref());
+ 
+              p1share.push(p1value1back.unwrap());
+              p1share.push(p1value2back.unwrap());
 
+/*
+P2 share conversion
 
+*/
+              ///////////////
+              let mut p2share=p1_their_secret_shares.clone();
+              let p2values1=bincode::serialize(&p2share[0]).unwrap(); // part1 of party1 vector
+              let p2values2=bincode::serialize(&p2share[1]).unwrap();// part2 of party1 vector
+              //p2share.zeroize();           
+               p2share[0].zeroize();
+               p2share[1].zeroize();
+  
+               let p2value1back: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&p2values1.as_ref());
+               let p2value2back: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&p2values2.as_ref());
+  
+               p2share.push(p2value1back.unwrap());
+               p2share.push(p2value2back.unwrap());
 
-
-            let p1_my_secret_shares = vec!(p2_their_secret_shares[0].clone(), // XXX FIXME indexing
-                                           p3share[0].clone());
-            let p2_my_secret_shares = vec!(p1_their_secret_shares[0].clone(),
-                                           p3share[1].clone());
-
+             
+            let p1_my_secret_shares = vec!(p2share[0].clone(),p3share[0].clone());
+            let p2_my_secret_shares = vec!(p1share[0].clone(), p3share[1].clone());
+            let p3_my_secret_shares = vec!(p1share[1].clone(), p2share[1].clone());
 
             // let p1_my_secret_shares = vec!(p2_their_secret_shares[0].clone(), // XXX FIXME indexing
             //                                p3_their_secret_shares[0].clone());
             // let p2_my_secret_shares = vec!(p1_their_secret_shares[0].clone(),
             //                                p3_their_secret_shares[1].clone());
-
-            let p3_my_secret_shares = vec!(p1_their_secret_shares[1].clone(),
-                                           p2_their_secret_shares[1].clone());
+            // let p3_my_secret_shares = vec!(p1_their_secret_shares[1].clone(),
+            // p2_their_secret_shares[1].clone());
+            
 
             let p1_state = p1_state.to_round_two(p1_my_secret_shares)?;
             let p2_state = p2_state.to_round_two(p2_my_secret_shares)?;
@@ -1201,6 +1234,13 @@ mod test {
             println!("Groupkey party three");
             println!("Groupkey party three");
             println!("{:?}",p3_group_key);
+            println!("Public Key from Private key ");
+            println!("p1 Public Key from Private key ");
+            println!("{:?}",_p1_secret_key.to_public());
+            println!("p2 Public Key from Private key ");
+            println!("{:?}",_p2_secret_key.to_public());
+            println!("p3 Public Key from Private key ");
+            println!("{:?}",_p3_secret_key.to_public());
     //         println!("Groupkey party two");
     //         println!("{:?}",p2_group_key);
     // println!("Groupkey party 3");
