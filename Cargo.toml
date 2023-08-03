@@ -1,12 +1,12 @@
 [package]
 name = "frost-secp256k1"
-version = "0.2.3"
-authors = ["isis lovecruft <isis@patternsinthevoid.net>", "Rupansh Sekar <rupanshsekar@hotmail.com>"]
+version = "0.2.5"
+authors = ["isis lovecruft <isis@patternsinthevoid.net>", "Rupansh Sekar <rupanshsekar@hotmail.com>", "NoorahSmith <redmi.aboo@gmail.com"]
 edition = "2018"
 description = "FROST: Flexible Round-Optimised Threshold Signature using the Ristretto group"
 readme = "README.md"
 license = "BSD-3-Clause"
-repository = "https://github.com/xp-network/frost-dalek"
+repository = "https://github.com/NoorahSmith/Frost-secp256Projective.git"
 homepage = "https://dalek.rs"
 documentation = "https://docs.rs/frost-dalek"
 keywords = ["cryptography", "frost", "ristretto", "signature", "threshold-signature"]
@@ -21,7 +21,7 @@ rand = { version = "0.8", optional = true }
 sha3 = { version = "0.10", default-features = false }
 subtle = { version = "2.4", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
-k256 = { version = "0.10.2", default-features = false, features = ["keccak256", "arithmetic","serde"] }
+k256 = { version = "0.10.2", default-features = false, features = ["keccak256", "arithmetic","serde","expose-field", "hash2curve"] }
 sec1 = { version = "0.2", default-features = false }
 bincode = "1.3.3"
 serde_json = {version = "1.0.103"}
