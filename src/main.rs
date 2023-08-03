@@ -1,3 +1,4 @@
+//use core::slice::SlicePattern;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 
@@ -69,7 +70,7 @@ fn main() {
     totalvalue=11; // hard coding 11 validators
     id=name.trim().parse().unwrap();
     //taking inout of id
-l
+
 
     // create Directory for file 
     let mut pathfile = String::from("/opt/datafrost/") + lines[0].to_string().trim() + "/";
@@ -95,13 +96,20 @@ l
           let mut blab=Participant::new(&params, id);
           println!("number of commmimments{}",party.commitments.len());
           println!("{}",party.commitments[0].to_bytes().len());
+         // println!("{}",party.commitments[7].to_bytes().len());
+
         //   blab.0.commitments.clear();
         //   //blab.0.commitments.push(value);
-        println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes());
-        println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes());
-        println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes().len());
-        println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes().len());
-        println!("id{}",id.to_be_bytes().len());
+        // println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes());
+        // println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes());
+        // println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes().len());
+        // println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes().len());
+
+        let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
+        println!("Party bytes");
+        println!("{:?}",bytes_committed);
+
+        //println!("id{}",id.to_be_bytes().len());
         //   blab.0.proof_of_secret_key.s.to_bytes();
           // Participant File 
         //   let mut p1_participant=bincode::serialize(&party.commitments).unwrap();
@@ -114,11 +122,50 @@ l
 
 
 }
-// fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::keygen::Coefficients,zkp:frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;199]{
+fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;299]{
 
-// let res:[u8;199]=todo!();
-// res
-// }
+
+
+    let mut resultbytes:[u8;299]=[0;299];
+    // Structure of bytes
+    // ZKP R scaler 32 bytes
+    // ZKP S scaler 32 bytes
+    // 7 Commitments shares 33 bytes=231
+    // index u32 ->u8 = 4 bytes
+    // Total=32+32+33+33+33+33+33+33+33+4=299 
+    let mut resultdummy: [u8;32]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,1,2];
+    
+    let zkpbytes=zkp.r.to_bytes();
+    let zkpsplitter=zkpbytes.split_at(32);
+    resultdummy.clone_from_slice(zkpsplitter.0);
+    resultbytes[0..32].clone_from_slice(zkpsplitter.0);
+    //resultbytes[0..32]=resultdummy;
+    //S bytes 
+    let zkpbytes=zkp.s.to_bytes();
+    let zkpsplitter=zkpbytes.split_at(32);
+    resultdummy.clone_from_slice(zkpsplitter.0);
+    resultbytes[32..64].clone_from_slice(zkpsplitter.0);
+    //loop through 7 Commitments of 33 bytes 
+    let mut commit_count=0;
+    let mut startin_byte_index=64;
+    while commit_count<7
+    {   let ending_index=startin_byte_index+33;
+        let commitmentbytes=commitments_party.commitments[commit_count].to_bytes();
+        let commit_split=commitmentbytes.split_at(33);
+        resultbytes[startin_byte_index..ending_index].clone_from_slice(commit_split.0);
+        startin_byte_index=ending_index;
+        commit_count=commit_count+1;
+
+    }
+    
+    resultbytes[startin_byte_index..299].copy_from_slice(index.to_be_bytes().as_slice());
+
+      
+
+
+
+    resultbytes
+}
 // fn convert_bytes_to_party(partybytes: &[u8;199]) -> (Vec<k256::ProjectivePoint>,frost_secp256k1::nizk::NizkOfSecretKey,u32){
 
 //     let x: Vec<k256::ProjectivePoint>;
