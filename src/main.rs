@@ -145,13 +145,18 @@ fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Part
     let zkpsplitter=zkpbytes.split_at(32);
     resultdummy.clone_from_slice(zkpsplitter.0);
     resultbytes[32..64].clone_from_slice(zkpsplitter.0);
+    /*
+    let generic_array: [u32; 4] = [1, 2, 3, 4];
+    let fixed_size_array: [u8; 16] = unsafe { std::mem::transmute(generic_array) };
+    
+     */
     //loop through 7 Commitments of 33 bytes 
     let mut commit_count=0;
     let mut startin_byte_index=64;
     while commit_count<7
     {   let ending_index=startin_byte_index+33;
         let commitmentbytes=commitments_party.commitments[commit_count].to_bytes();
-        let commit_split=commitmentbytes.split_at(33);
+        let commit_split=commitmentbytes.split_at(331);
         resultbytes[startin_byte_index..ending_index].clone_from_slice(commit_split.0);
         startin_byte_index=ending_index;
         commit_count=commit_count+1;
