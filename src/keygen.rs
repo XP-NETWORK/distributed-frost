@@ -1126,7 +1126,9 @@ mod test {
             p1.public_key().insert(resul);
             println!("public key from affine");
                        println!("{:#?}",p1.public_key().unwrap());let count=3;
-                       
+              let xyparty :Participant;       
+              bincode::serialize(&xyparty.proof_of_secret_key.r.to_bytes());
+                
             
             let mut p1_other_participants: Vec<Participant> = vec!(p2.clone(), p3.clone());
             let p1_state = DistributedKeyGeneration::<RoundOne>::new(&params,
