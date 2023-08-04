@@ -26,6 +26,8 @@ sec1 = { version = "0.2", default-features = false }
 bincode = "1.3.3"
 serde_json = {version = "1.0.103"}
 serde = { version = "1.0", features = ["derive"] }
+generic-array = "0.14.7"
+
 
 [dev-dependencies]
 criterion = { version = "0.3" }
