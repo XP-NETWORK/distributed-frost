@@ -108,7 +108,42 @@ fn main() {
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
         println!("Party bytes");
         println!("{:?}",bytes_committed);
+        let mut bytes_sequence :[u8;4]=[0,1,2,3];
+        bytes_sequence.clone_from_slice(&bytes_committed[295..299]);
+        
+        //let value_index=indexconvert as u32
+        let u32_integer: u32 = ((bytes_sequence[0] as u32) << 24)
+                        | ((bytes_sequence[1] as u32) << 16)
+                        | ((bytes_sequence[2] as u32) << 8)
+                        | (bytes_sequence[3] as u32);;
+        println!("{:?}",u32_integer);
+        println!("Index from u8 to u32 bytes");
+        let mut bytes_for_r: [u8;32]=[0;32];
+        bytes_for_r.copy_from_slice(&bytes_committed[0..32]);
+        println!("{:?}",bytes_for_r);
+        println!("from original value");
+        println!("{:?}",party.proof_of_secret_key.r.to_bytes());
+        let mut commit=0;
+        let mut start_bytes=64;
+        while(commit<7)
+        {
+            let endvalue=start_bytes+33;
+            let mut bytescommit:[u8;33]=[0;33];
+            bytescommit.copy_from_slice(&bytes_committed[start_bytes..endvalue]);
+            println!("bytes from functon");
+            println!("{:?}",bytescommit);
+            println!("bytes from commitment vector {}",commit );
+            println!("{:?}",party.commitments[commit].to_bytes());
+            start_bytes=endvalue;
+            commit=commit+1;
 
+
+
+
+
+        }
+
+        
         //println!("id{}",id.to_be_bytes().len());
         //   blab.0.proof_of_secret_key.s.to_bytes();
           // Participant File 
@@ -156,7 +191,7 @@ fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Part
     while commit_count<7
     {   let ending_index=startin_byte_index+33;
         let commitmentbytes=commitments_party.commitments[commit_count].to_bytes();
-        let commit_split=commitmentbytes.split_at(331);
+        let commit_split=commitmentbytes.split_at(33);
         resultbytes[startin_byte_index..ending_index].clone_from_slice(commit_split.0);
         startin_byte_index=ending_index;
         commit_count=commit_count+1;
@@ -164,6 +199,7 @@ fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Part
     }
     
     resultbytes[startin_byte_index..299].copy_from_slice(index.to_be_bytes().as_slice());
+
 
       
 
