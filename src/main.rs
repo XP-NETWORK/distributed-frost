@@ -111,7 +111,8 @@ fn main() {
          // println!("number of commmimments{}",party.commitments.len());
         //  println!("{}",party.commitments[0].to_bytes().len());
          // println!("{}",party.commitments[7].to_bytes().len());
-
+        
+        
         //   blab.0.commitments.clear();
         //   //blab.0.commitments.push(value);
         // println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes());
@@ -140,7 +141,7 @@ fn main() {
         //  println!("{:?}",party.commitments[6]);
 
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
-
+        
          println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
          std::io::stdin().read_line(&mut name);
       
@@ -182,6 +183,49 @@ fn main() {
 
 
         // }
+
+        let mut filler =false;
+        let mut file_nos=1;
+       while file_nos<12 && filler== true
+       {
+           if file_nos==id
+           {
+
+           }
+           else {
+               
+           
+           let mut pathfile = String::from("/opt/datafrost/") + &file_nos.to_string().trim() + "/";
+           let _res=fs::create_dir(&pathfile);
+           let mut publickeytofile = pathfile + "public" + &file_nos.to_string() + ".txt";
+           let mut data_file = File::create(publickeytofile).expect("creation failed");
+       
+           // Create Participant using parameters
+           let params = Parameters { n: totalvalue, t:threholdvalue };
+           let (party_to_write, _partycoeffs) = Participant::new(&params, file_nos);
+           //Convert Public key to bytes
+               let public_bytes =party_to_write.public_key().unwrap().to_bytes();
+               let _file_write_result=data_file.write_all(&public_bytes);
+               let mut public_key_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/public" + file_nos.to_string().trim()+ ".txt";
+               let mut file = match File::open(&public_key_filepath) {
+                   Ok(file) => file,
+                   Err(_) => panic!("no such file"),
+               };
+               let bytes_committed=convert_party_to_bytes(&file_nos, &party_to_write, &party_to_write.proof_of_secret_key);
+
+                    
+                let mut participantvectorpath = String::from("/opt/datafrost/") +&file_nos.to_string()+ "/participantvector" + &file_nos.to_string() + ".txt";
+               
+                println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
+                //std::io::stdin().read_line(&mut name);
+             
+                let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
+                let result_file_write=data_filecommit.write_all(&bytes_committed);
+
+           }
+           file_nos=file_nos+1;
+       }
+
         let partyglobal=convert_bytes_to_party(&bytes_committed);
         
         let mut  other_Party_vectors: Vec<Participant>= vec!();
@@ -328,6 +372,7 @@ pub struct ZKPSecretKey {
     /// The scalar portion of the Schnorr signature which is the actual signature.
     pub r: Scalar,
 }
+
 
 fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
 {
