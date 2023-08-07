@@ -120,6 +120,7 @@ fn main() {
         // println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes().len());
 
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
+
         // println!("Party bytes");
         // println!("{:?}",bytes_committed);
         // let sample: Vec<u8>=bincode::serialize(&party.proof_of_secret_key.r).unwrap();
@@ -138,7 +139,15 @@ fn main() {
          println!("{:?}",party.commitments[5]);
          println!("{:?}",party.commitments[6]);
 
+         let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
 
+         println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
+         std::io::stdin().read_line(&mut name);
+      
+         let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
+         let result_file_write=data_filecommit.write_all(&bytes_committed);
+// let Parties :Participant=Participant { index: (), commitments: (), proof_of_secret_key: () }
+// Parties.clone_from(source);
         
                 //let proofofkey=frost_secp256k1::nizk::NizkOfSecretKey(s,r);
         // let mut bytes_sequence :[u8;4]=[0,1  ,2,3];
@@ -1143,7 +1152,17 @@ fn mainold()
     // let mut key = my_secret_shares2.iter().fold(Scalar::ZERO, |acc, x| acc + x.polynomial_evaluation);
 
     // key += self.state.my_secret_share.polynomial_evaluation;
-
+ let supms=partystate2.finish(&p1.public_key().unwrap());
+  let Gkey=supms.as_ref().unwrap().0;
+  let skey=supms.unwrap().1;
+  let pkey=skey.to_public();
+  println!("public key ");
+  println!("{:?}",pkey.share);
+  println!("Group key ");
+  println!("{:?}",Gkey);
+  println!("Secret key ");
+  println!("{:?}",pkey.share);
+  //skey.sign(message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
  
 
   
