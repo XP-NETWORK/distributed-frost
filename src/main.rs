@@ -183,16 +183,32 @@ fn main() {
 
         // }
         let partyglobal=convert_bytes_to_party(&bytes_committed);
-        println!("{:?}",partyglobal.index);
-        println!("{:?}",partyglobal.proof_of_secret_key.r);
-         println!("{:?}",partyglobal.proof_of_secret_key.s);
-         println!("{:?}",partyglobal.commitments[0]);
-         println!("{:?}",partyglobal.commitments[1]);
-         println!("{:?}",partyglobal.commitments[2]);
-         println!("{:?}",partyglobal.commitments[3]);
-         println!("{:?}",partyglobal.commitments[4]);
-         println!("{:?}",partyglobal.commitments[5]);
-         println!("{:?}",partyglobal.commitments[6]);
+        
+        let mut  other_Party_vectors: Vec<Participant>= vec!();
+        let mut counter_party=1;
+        while (counter_party<12)
+        {
+            if counter_party!=id
+            {
+                let mut path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
+                let mut file = match File::open(&path_to_read_party_vector) {
+                    Ok(file) => file,
+                    Err(_) => panic!("no such file"),
+                };
+                
+
+            }
+        }
+        // println!("{:?}",partyglobal.index);
+        // println!("{:?}",partyglobal.proof_of_secret_key.r);
+        //  println!("{:?}",partyglobal.proof_of_secret_key.s);
+        //  println!("{:?}",partyglobal.commitments[0]);
+        //  println!("{:?}",partyglobal.commitments[1]);
+        //  println!("{:?}",partyglobal.commitments[2]);
+        //  println!("{:?}",partyglobal.commitments[3]);
+        //  println!("{:?}",partyglobal.commitments[4]);
+        //  println!("{:?}",partyglobal.commitments[5]);
+        //  println!("{:?}",partyglobal.commitments[6]);
 
        // party.commitments
         //println!("id{}",id.to_be_bytes().len());
@@ -1162,7 +1178,7 @@ fn mainold()
   println!("{:?}",Gkey);
   println!("Secret key ");
   println!("{:?}",pkey.share);
-  //skey.sign(message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+  //skey.sign(message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)1
  
 
   
