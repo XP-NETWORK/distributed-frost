@@ -129,15 +129,15 @@ fn main() {
         // let scl: Result<Scalar, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.as_ref());
         
         // println!("{:?}",scl.unwrap());
-         println!("{:?}",party.proof_of_secret_key.r);
-         println!("{:?}",party.proof_of_secret_key.s);
-         println!("{:?}",party.commitments[0]);
-         println!("{:?}",party.commitments[1]);
-         println!("{:?}",party.commitments[2]);
-         println!("{:?}",party.commitments[3]);
-         println!("{:?}",party.commitments[4]);
-         println!("{:?}",party.commitments[5]);
-         println!("{:?}",party.commitments[6]);
+        //  println!("{:?}",party.proof_of_secret_key.r);
+        //  println!("{:?}",party.proof_of_secret_key.s);
+        //  println!("{:?}",party.commitments[0]);
+        //  println!("{:?}",party.commitments[1]);
+        //  println!("{:?}",party.commitments[2]);
+        //  println!("{:?}",party.commitments[3]);
+        //  println!("{:?}",party.commitments[4]);
+        //  println!("{:?}",party.commitments[5]);
+        //  println!("{:?}",party.commitments[6]);
 
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
 
@@ -186,19 +186,58 @@ fn main() {
         
         let mut  other_Party_vectors: Vec<Participant>= vec!();
         let mut counter_party=1;
+       // other_Party_vectors.clear();
         while (counter_party<12)
         {
-            if counter_party!=id
+            
+            //if counter_party!=id
             {
-                let mut path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
+                let  path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
                 let mut file = match File::open(&path_to_read_party_vector) {
                     Ok(file) => file,
                     Err(_) => panic!("no such file"),
                 };
-                
+                println!("{:?}",path_to_read_party_vector);
+                let mut result_bytes_from_file:[u8;315]=[0;315];
+                let result_read=file.read_exact(&mut result_bytes_from_file);
+                //if result_read.is_ok()
+                {
+                    let mut party_input=convert_bytes_to_party(&result_bytes_from_file);
+                    
+                    //println!("Value of Party vector {}",12-counter_party);
 
+                    if party_input.index!=party.index
+                    {
+                        println!("{:?}",party_input);
+                    other_Party_vectors.push(party_input);
+                    
+                    println!("             ",);
+                    }
+                  
+                }
+
+                
             }
+            counter_party=counter_party+1;
         }
+        println!("{}",other_Party_vectors.len());
+        println!("{}",counter_party);
+        std::io::stdin().read_line(&mut name);
+
+        counter_party=0;
+        // printing 
+        // while counter_party<10
+        
+        // {
+        //     println!("             ",);
+        //     println!("Value of Party vector {}",counter_party);
+        //     println!("             {}",counter_party);
+        //     println!("{:?}",other_Party_vectors[counter_party as usize]);
+        //     counter_party=counter_party+1;
+
+        // }
+        
+        
         // println!("{:?}",partyglobal.index);
         // println!("{:?}",partyglobal.proof_of_secret_key.r);
         //  println!("{:?}",partyglobal.proof_of_secret_key.s);
