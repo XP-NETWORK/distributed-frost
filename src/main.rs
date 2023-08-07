@@ -200,6 +200,7 @@ fn main() {
                 println!("{:?}",path_to_read_party_vector);
                 let mut result_bytes_from_file:[u8;315]=[0;315];
                 let result_read=file.read_exact(&mut result_bytes_from_file);
+
                 //if result_read.is_ok()
                 {
                     let mut party_input=convert_bytes_to_party(&result_bytes_from_file);
