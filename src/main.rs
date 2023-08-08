@@ -62,6 +62,14 @@ fn lines_from_file(filename: &str) -> Vec<String> {
     lines
 }
 
+fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;900]
+{
+
+    let mut secretbytes: [u8;900]=[0;900];
+
+    secretbytes
+
+}
 
 //Line 50 for Main 
 fn main() {
@@ -227,7 +235,33 @@ fn main() {
         let mut partyone_secrets: &Vec<SecretShare>=partystate.their_secret_shares().unwrap();
 
         // println!("Secrets Vector Done for Id {} ",id);
+        let total_secret_shares=partyone_secrets.len();
          println!("{:?}",partyone_secrets);
+         println!("{:?}",partyone_secrets.len());
+
+         let partysample=partyone_secrets[0].clone();
+         let xyz=bincode::serialize(&partysample);
+         println!("{}",&xyz.as_ref().unwrap().len());
+         println!("{:?}",&xyz.as_ref().unwrap());
+         println!("/////////////////////////////////////////////////");
+         let fullparty=bincode::serialize(partyone_secrets);
+        
+        let file_nos=1;
+         let mut secret_share_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/party_secrets" + file_nos.to_string().trim()+ ".txt";
+         let mut secret_file = File::create(secret_share_filepath).expect("creation failed");
+         let result=secret_file.write_all(&fullparty.unwrap());
+         
+
+        //  let mut file = match File::open(&secret_share_filepath) {
+        //      Ok(file) => file,
+        //      Err(_) => panic!("no such file"),
+        //  };
+
+
+         
+         
+         //partysample.clone_from(&partyone_secrets[0]);
+
         // println!("length of secrets{}",partyone_secrets.capacity());
         // println!("{:?}",partyone_secrets[0]);
         // println!("{:?}",partyone_secrets[1]);
@@ -1259,6 +1293,8 @@ fn mainold()
     
         resultbytes
     }
+
+
     
 
 
