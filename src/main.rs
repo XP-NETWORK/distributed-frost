@@ -142,6 +142,7 @@ fn main() {
     let mut pathfile = String::from("/opt/datafrost/") + lines[0].to_string().trim() + "/";
     let _res=fs::create_dir(&pathfile);
     let mut publickeytofile = pathfile + "public" + &lines[0].to_string() + ".txt";
+    fs::remove_file(&publickeytofile).expect("could not remove file");
     let mut data_file = File::create(publickeytofile).expect("creation failed");
 
     // Create Participant using parameters
@@ -168,11 +169,11 @@ fn main() {
         
          println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
 //         std::io::stdin().read_line(&mut name);
-      
+            fs::remove_file(&participantvectorpath).expect("could not remove file");
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
     // Create all files for computation if filler = ture
-        let mut filler =false;
+        let mut filler =true;
         let mut file_nos=1;
        while file_nos<12 && filler== true
        {
@@ -216,7 +217,7 @@ fn main() {
 
 
         //let partyglobal=convert_bytes_to_party(&bytes_committed);
-        
+                 std::io::stdin().read_line(&mut name);
         let mut  other_Party_vectors: Vec<Participant>= vec!();
         let mut counter_party=1;
        // other_Party_vectors.clear();
@@ -295,6 +296,7 @@ fn main() {
         let fullparty=convert_secret_to_bytes(partyone_secrets);
 
          let mut secret_share_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/party_secrets" + id.to_string().trim()+ ".txt";
+         fs::remove_file(&secret_share_filepath).expect("could not remove file");
          let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
          let result=secret_file.write_all(&fullparty);
          println!("Checking all files are written with party scecrets");
@@ -313,7 +315,7 @@ fn main() {
                 println!("no need to scan own file for own secret shares");
             }
             else {
-                
+            
             
              let mut secret_share_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/party_secrets" + file_nos.to_string().trim()+ ".txt";
              let mut file = match File::open(&secret_share_filepath) {
@@ -327,10 +329,11 @@ fn main() {
             // find shares belonging to self from file 
             let mut vari_count=0;
             while (vari_count<shared_vector.len()+1)
-            {
+            {println!("going through this file {}",secret_share_filepath);
                 if shared_vector[vari_count].index==id
                 {
                     other_party_secret_shares.push(shared_vector[vari_count].clone());
+                    
                     break;
                 }
                 vari_count=vari_count+1;
@@ -340,7 +343,7 @@ fn main() {
 
                 } // else 
                 file_nos=file_nos+1;
-                println!("going through this file {}",secret_share_filepath);
+                
             } // while reading all files
 
            
@@ -362,7 +365,7 @@ fn main() {
             // println!("{:?}",&mut blabblabbalb.1);
              println!("Public key from Private key ");
              println!("{:?}",&mut Partyfinale.1.to_public());
-             
+
             // println!("Public key from Pubic key ");
             // let pkey=blabblabbalb.unwrap().1.to_public();
             // println!("{:?}",pkey);
