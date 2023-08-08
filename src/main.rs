@@ -62,12 +62,56 @@ fn lines_from_file(filename: &str) -> Vec<String> {
     lines
 }
 
-fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;900]
+fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
 {
+    let total=secretvector.len();
+    let mut count=0;
+    let mut secretbytes: [u8;440]=[0;440];
+    let mut startindex=0;
+    let mut endindex=0;
+    while count<total
+    {   
+        let writebytes: Vec<u8>=bincode::serialize(&secretvector[count]).unwrap();
+        
+        let size: usize =writebytes.len();
+        endindex=endindex+size;
+        secretbytes[startindex..endindex].copy_from_slice(writebytes.as_slice());
 
-    let mut secretbytes: [u8;900]=[0;900];
+        //bytes_for_r.copy_from_slice(&party_bytes[0..40]);
+        
+        println!("{}",size);
+
+        count=count+1;
+        startindex=endindex;
+
+    }
+    
 
     secretbytes
+
+}
+fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
+{
+    
+    let mut secret_vector_from_bytes :Vec<SecretShare>=vec![];
+    
+     let mut startindex=0;
+     let mut endindex=44;
+     let mut total=11;
+     let mut count=1;
+     while count<total
+    {   
+        let mut bytesvalues: [u8;44]=[0;44];
+        bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
+        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
+        secret_vector_from_bytes.push(clone_secret_share.unwrap());
+                count=count+1;
+         startindex=endindex;
+         endindex=endindex+44;
+
+    }
+    
+    secret_vector_from_bytes
 
 }
 
@@ -123,7 +167,7 @@ fn main() {
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
         
          println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-         std::io::stdin().read_line(&mut name);
+//         std::io::stdin().read_line(&mut name);
       
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
@@ -239,23 +283,132 @@ fn main() {
          println!("{:?}",partyone_secrets);
          println!("{:?}",partyone_secrets.len());
 
-         let partysample=partyone_secrets[0].clone();
-         let xyz=bincode::serialize(&partysample);
-         println!("{}",&xyz.as_ref().unwrap().len());
-         println!("{:?}",&xyz.as_ref().unwrap());
-         println!("/////////////////////////////////////////////////");
-         let fullparty=bincode::serialize(partyone_secrets);
+        //  let partysample=partyone_secrets[0].clone();
+        //  let xyz=bincode::serialize(&partysample);
+        //  println!("{}",&xyz.as_ref().unwrap().len());
+        //  println!("{:?}",&xyz.as_ref().unwrap());
+        //  println!("/////////////////////////////////////////////////");
+        //  let fullparty=bincode::serialize(partyone_secrets);
         
-        let file_nos=1;
-         let mut secret_share_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/party_secrets" + file_nos.to_string().trim()+ ".txt";
-         let mut secret_file = File::create(secret_share_filepath).expect("creation failed");
-         let result=secret_file.write_all(&fullparty.unwrap());
+        //Write own Share to file 
+        
+        let fullparty=convert_secret_to_bytes(partyone_secrets);
+
+         let mut secret_share_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/party_secrets" + id.to_string().trim()+ ".txt";
+         let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
+         let result=secret_file.write_all(&fullparty);
+         println!("Checking all files are written with party scecrets");
+         std::io::stdin().read_line(&mut name);
          
 
-        //  let mut file = match File::open(&secret_share_filepath) {
-        //      Ok(file) => file,
-        //      Err(_) => panic!("no such file"),
-        //  };
+            // Start loop for retreiving secrets from all personnel
+            // read all secret file vectors from other parties and select all secret shares with own id 
+            let mut other_party_secret_shares: Vec<SecretShare>=vec!();
+            let mut  file_nos=1;
+            while file_nos<12
+            {
+            if file_nos==id
+            {
+                // no need to scan own file for own secret shares
+                println!("no need to scan own file for own secret shares");
+            }
+            else {
+                
+            
+             let mut secret_share_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/party_secrets" + file_nos.to_string().trim()+ ".txt";
+             let mut file = match File::open(&secret_share_filepath) {
+                 Ok(file) => file,
+                 Err(_) => panic!("no such file"),
+                };
+
+            let mut secret_bytes : [u8;440]=[0;440];
+            file.read_exact(&mut secret_bytes);
+            let mut shared_vector=convert_bytes_to_secret(secret_bytes);
+            // find shares belonging to self from file 
+            let mut vari_count=0;
+            while (vari_count<shared_vector.len()+1)
+            {
+                if shared_vector[vari_count].index==id
+                {
+                    other_party_secret_shares.push(shared_vector[vari_count].clone());
+                    break;
+                }
+                vari_count=vari_count+1;
+
+            }
+
+
+                } // else 
+                file_nos=file_nos+1;
+                println!("going through this file {}",secret_share_filepath);
+            } // while reading all files
+
+           
+            let  partystate2: DistributedKeyGeneration<keygen::RoundOne>=partystate.clone();
+        
+            let  partystaternd2: Result<DistributedKeyGeneration<keygen::RoundTwo>, ()> = partystate2.clone().to_round_two( other_party_secret_shares);
+            
+            let partystaternd2: DistributedKeyGeneration<keygen::RoundTwo>=partystaternd2.unwrap();
+    
+            let mut Partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
+            
+            //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
+            println!("Groupkey");
+            println!("{:?}",Partyfinale.0);
+             
+    
+             println!("Secret key full ");
+              println!("{:?}",&mut Partyfinale.1);
+            // println!("{:?}",&mut blabblabbalb.1);
+             println!("Public key from Private key ");
+             println!("{:?}",&mut Partyfinale.1.to_public());
+             
+            // println!("Public key from Pubic key ");
+            // let pkey=blabblabbalb.unwrap().1.to_public();
+            // println!("{:?}",pkey);
+    
+            //partystaternd2.unwrap();
+            //let (party_group_key: GroupKey , party_secret_key: SecretKey)=partystaternd2.unwrap().finish(&p1.public_key().unwrap());
+            //let (xy, GroupKey, xy3, SecretKey)=partystaternd2.unwrap().finish(&p1.public_key().unwrap());
+            //let party_groupkey=xy.iter();
+               // let xy=partystaternd2.finish(&p1.public_key().unwrap());
+                //println!("{:?}", xy);
+            
+    
+    
+           /*
+            let mut alice_other_participants: Vec<Participant> = vec!(bob.clone(), carol.clone());
+            let alice_state = DistributedKeyGeneration::<_>::new(&params, &alice.index, &alice_coefficients,
+                                                                 &mut alice_other_participants).or(Err(()))?;
+            let alice_their_secret_shares = alice_state.their_secret_shares()?;
+            let alice_state = alice_state.to_round_two(alice_my_secret_shares)?;
+            //! # let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
+             */
+          
+    
+                // let mut Othervectors :Vec<Participant>=vec!();
+    
+                
+
+
+        // let mut vectorbytes=convert_secret_to_bytes(partyone_secrets);
+         //let mut bytesvalues: [u8;44]=[0;44];
+         //bytesvalues.copy_from_slice(&vectorbytes[0..44]);
+         //let share_value: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
+         //println!("{:?}",share_value.unwrap());
+
+
+        // copy shared vectors 
+
+        //  println!("{:?}",shared_vector[0]);
+        //  println!("{:?}",shared_vector[1]);
+        //  println!("{:?}",shared_vector[2]);
+        //  println!("{:?}",shared_vector[3]);
+
+
+         
+     //l   let secretsharevector:Result<&Vec<SecretShare>, Box<bincode::ErrorKind>>  =bincode::deserialize(&secret_bytes.as_slice());
+
 
 
          
