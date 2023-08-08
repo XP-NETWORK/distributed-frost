@@ -1230,19 +1230,37 @@ P2 share conversion
             println!("Groupkey party one");
             println!("Groupkey party one");
             println!("{:?}",p1_group_key);
+            println!("Groupkey party one bytes array");
+            println!("{:?}",p1_group_key.to_bytes());
             println!("Groupkey party two");
             println!("Groupkey party two");
             println!("{:?}",p2_group_key);
+            println!("Groupkey party two bytes array");
+            println!("{:?}",p2_group_key.to_bytes());
             println!("Groupkey party three");
             println!("Groupkey party three");
             println!("{:?}",p3_group_key);
+            println!("Groupkey party three bytes array");
+            println!("{:?}",p3_group_key.to_bytes());
             println!("Public Key from Private key ");
             println!("p1 Public Key from Private key ");
             println!("{:?}",_p1_secret_key.to_public());
-            println!("p2 Public Key from Private key ");
+                        println!("p2 Public Key from Private key ");
             println!("{:?}",_p2_secret_key.to_public());
+            
+            
             println!("p3 Public Key from Private key ");
             println!("{:?}",_p3_secret_key.to_public());
+
+            
+            println!("p1 Private key ");
+            println!("{:?}",_p1_secret_key);
+            println!("p2 Private key ");
+            println!("{:?}",_p2_secret_key);
+                     
+            println!("p3  Private key ");
+            println!("{:?}",_p3_secret_key);
+
     //         println!("Groupkey party two");
     //         println!("{:?}",p2_group_key);
     // println!("Groupkey party 3");
