@@ -104,42 +104,14 @@ fn main() {
             Err(_) => panic!("no such file"),
         };
         //let mut bufferfile :[u8;65]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4];
-        let mut bufferfile: [u8;33]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,1,2,3];
+        let mut bufferfile: [u8;33]=[0;33];
           let _ = file.read_exact( &mut bufferfile);
-          let xyz3: Result<k256::elliptic_curve::PublicKey<k256::Secp256k1>, k256::elliptic_curve::Error>= PublicKey::from_sec1_bytes(&bufferfile)   ;
-          let mut blab=Participant::new(&params, id);
-         // println!("number of commmimments{}",party.commitments.len());
-        //  println!("{}",party.commitments[0].to_bytes().len());
-         // println!("{}",party.commitments[7].to_bytes().len());
-        
-        
-        //   blab.0.commitments.clear();
-        //   //blab.0.commitments.push(value);
-        // println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes());
-        // println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes());
-        // println!("rbytes {:?},",   blab.0.proof_of_secret_key.r.to_bytes().len());
-        // println!("sbytes {:?}," ,  blab.0.proof_of_secret_key.s.to_bytes().len());
-
+         // let xyz3: Result<k256::elliptic_curve::PublicKey<k256::Secp256k1>, k256::elliptic_curve::Error>= PublicKey::from_sec1_bytes(&bufferfile)   ;
+          //let mut blab=Participant::new(&params, id);
+         
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
 
-        // println!("Party bytes");
-        // println!("{:?}",bytes_committed);
-        // let sample: Vec<u8>=bincode::serialize(&party.proof_of_secret_key.r).unwrap();
-        // println!("{:?}",sample);
-        // println!("{:?}",sample.capacity());
-        // let scl: Result<Scalar, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.as_ref());
         
-        // println!("{:?}",scl.unwrap());
-        //  println!("{:?}",party.proof_of_secret_key.r);
-        //  println!("{:?}",party.proof_of_secret_key.s);
-        //  println!("{:?}",party.commitments[0]);
-        //  println!("{:?}",party.commitments[1]);
-        //  println!("{:?}",party.commitments[2]);
-        //  println!("{:?}",party.commitments[3]);
-        //  println!("{:?}",party.commitments[4]);
-        //  println!("{:?}",party.commitments[5]);
-        //  println!("{:?}",party.commitments[6]);
-
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
         
          println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
@@ -147,43 +119,7 @@ fn main() {
       
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
-// let Parties :Participant=Participant { index: (), commitments: (), proof_of_secret_key: () }
-// Parties.clone_from(source);
-        
-                //let proofofkey=frost_secp256k1::nizk::NizkOfSecretKey(s,r);
-        // let mut bytes_sequence :[u8;4]=[0,1  ,2,3];
-        // bytes_sequence.clone_from_slice(&bytes_committed[295..299]);
-        
-        // //let value_index=indexconvert as u32
-        // let u32_integer: u32 = ((bytes_sequence[0] as u32) << 24)
-        //                 | ((bytes_sequence[1] as u32) << 16)
-        //                 | ((bytes_sequence[2] as u32) << 8)
-        //                 | (bytes_sequence[3] as u32);;
-        // println!("{:?}",u32_integer);
-        // println!("Index from u8 to u32 bytes");
-        // let mut bytes_for_r: [u8;32]=[0;32];
-        // bytes_for_r.copy_from_slice(&bytes_committed[0..32]);
-        // println!("{:?}",bytes_for_r);
-        // println!("from original value");
-        // println!("{:?}",party.proof_of_secret_key.r.to_bytes());
-        // let mut commit=0;
-        // let mut start_bytes=64;
-        // while(commit<7)
-        // {
-        //     let endvalue=start_bytes+33;
-        //     let mut bytescommit:[u8;33]=[0;33];
-        //     bytescommit.copy_from_slice(&bytes_committed[start_bytes..endvalue]);
-        //     println!("bytes from functon");
-        //     println!("{:?}",bytescommit);
-        //     println!("bytes from commitment vector {}",commit );
-        //     println!("{:?}",party.commitments[commit].to_bytes());
-        //     start_bytes=endvalue;
-        //     commit=commit+1;
-
-
-
-        // }
-
+    // Create all files for computation if filler = ture
         let mut filler =false;
         let mut file_nos=1;
        while file_nos<12 && filler== true
@@ -224,9 +160,10 @@ fn main() {
 
            }
            file_nos=file_nos+1;
-       }
+       }// Files Creation Loop ends
 
-        let partyglobal=convert_bytes_to_party(&bytes_committed);
+
+        //let partyglobal=convert_bytes_to_party(&bytes_committed);
         
         let mut  other_Party_vectors: Vec<Participant>= vec!();
         let mut counter_party=1;
@@ -234,7 +171,12 @@ fn main() {
         while (counter_party<12)
         {
             
-            //if counter_party!=id
+            if counter_party==id
+            {
+                println!("Do nothing for self file creation");
+            }
+            else 
+                            
             {
                 let  path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
                 let mut file = match File::open(&path_to_read_party_vector) {
@@ -251,12 +193,17 @@ fn main() {
                     
                     //println!("Value of Party vector {}",12-counter_party);
 
-                    if party_input.index!=party.index
+                    if party_input.index==party.index
                     {
+                        println!("Dont push self key {} to Other party vector ",party_input.index)
+                    }
+                    else
+                    {
+                        println!("             ",);
                         println!("{:?}",party_input);
-                    other_Party_vectors.push(party_input);
+                         other_Party_vectors.push(party_input);
                     
-                    println!("             ",);
+                    
                     }
                   
                 }
@@ -264,47 +211,31 @@ fn main() {
                 
             }
             counter_party=counter_party+1;
+
         }
         println!("{}",other_Party_vectors.len());
         println!("{}",counter_party);
         std::io::stdin().read_line(&mut name);
 
-        counter_party=0;
-        // printing 
-        // while counter_party<10
-        
-        // {
-        //     println!("             ",);
-        //     println!("Value of Party vector {}",counter_party);
-        //     println!("             {}",counter_party);
-        //     println!("{:?}",other_Party_vectors[counter_party as usize]);
-        //     counter_party=counter_party+1;
+       // Go For DKG Part-1
 
-        // }
+        //DKG first Part  Round One 
         
         
-        // println!("{:?}",partyglobal.index);
-        // println!("{:?}",partyglobal.proof_of_secret_key.r);
-        //  println!("{:?}",partyglobal.proof_of_secret_key.s);
-        //  println!("{:?}",partyglobal.commitments[0]);
-        //  println!("{:?}",partyglobal.commitments[1]);
-        //  println!("{:?}",partyglobal.commitments[2]);
-        //  println!("{:?}",partyglobal.commitments[3]);
-        //  println!("{:?}",partyglobal.commitments[4]);
-        //  println!("{:?}",partyglobal.commitments[5]);
-        //  println!("{:?}",partyglobal.commitments[6]);
+        let mut partystate=DistributedKeyGeneration::<_>::new(&params,&id,&_partycoeffs,&mut other_Party_vectors).or(Err(())).unwrap();
 
-       // party.commitments
-        //println!("id{}",id.to_be_bytes().len());
-        //   blab.0.proof_of_secret_key.s.to_bytes();
-          // Participant File 
-        //   let mut p1_participant=bincode::serialize(&party.commitments).unwrap();
-        // println!("Participant bytes");sample.len()
-        // println!("{:?}", p1_participant);
-        // println!("Participant bytes lenth");
-        // println!("{:?}", p1_participant.len());
-        // let mut publickeytofile2 = String::from("/opt/datafrost/") + "public" + &lines[0].to_string() + "commit.txt";
-          
+        let mut partyone_secrets: &Vec<SecretShare>=partystate.their_secret_shares().unwrap();
+
+        // println!("Secrets Vector Done for Id {} ",id);
+         println!("{:?}",partyone_secrets);
+        // println!("length of secrets{}",partyone_secrets.capacity());
+        // println!("{:?}",partyone_secrets[0]);
+        // println!("{:?}",partyone_secrets[1]);
+        //send these secrets to other parties for proceeding to round 2
+        
+        //
+
+        
 
 
 }
