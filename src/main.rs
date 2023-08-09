@@ -42,8 +42,21 @@ use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
 //use k256::Scalar;
 //use k256::SecretKey;
-//use k256::{Scalar, SecretKey, SecretKeyBytes};
+// //use k256::{Scalar, SecretKey, SecretKeyBytes};
+// use std::fs;
+// use std::fs::File;
+// use std::io::prelude::*;
+// use std::io::Write;
+// use serde;
+// use std::convert::TryInto;
 
+// use k256::ecdsa::Signature;
+// use k256::ecdsa::signature::Signer;
+
+// use core::convert::TryFrom;
+// use generic_array::GenericArray;
+// use generic_array::typenum::Unsigned;
+// //use k256::Scalar;
 
 
 fn lines_from_file(filename: &str) -> Vec<String> {
@@ -115,7 +128,40 @@ fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
 
 }
 
-//Line 50 for Main 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//Line 150 for Main 
 fn main() {
 
     let mut name = String::new();
@@ -136,6 +182,15 @@ fn main() {
     totalvalue=11; // hard coding 11 validators
     id=name.trim().parse().unwrap();
     //taking inout of id
+
+
+
+
+
+
+
+
+
 
 
     // create Directory for file 
