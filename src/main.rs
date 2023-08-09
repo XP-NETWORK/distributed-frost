@@ -128,13 +128,7 @@ fn main() {
     totalvalue=lines[2].trim().parse().unwrap();
     //id=name.trim().parse().unwrap();  
     println!("id ={} , thresh={},total={}", id.to_string(), threholdvalue.to_string(), totalvalue.to_string());
-    //threholdvalue=7;// hard coding 7/11 validators
-   // totalvalue=11; // hard coding 11 validators
-    //id=name.trim().parse().unwrap();
-    //taking inout of id
-
-
-
+  
     // create Directory for file 
     let mut pathfile = String::from("/opt/datafrost/") + lines[0].to_string().trim() + "/";
     let _res=fs::create_dir(&pathfile);
@@ -156,11 +150,10 @@ fn main() {
         //let mut bufferfile :[u8;65]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4];
         let mut bufferfile: [u8;33]=[0;33];
           let _ = file.read_exact( &mut bufferfile);
-         // let xyz3: Result<k256::elliptic_curve::PublicKey<k256::Secp256k1>, k256::elliptic_curve::Error>= PublicKey::from_sec1_bytes(&bufferfile)   ;
-          //let mut blab=Participant::new(&params, id);
-
+        
           let testing3bytes=false;
 
+    // Testing code with 3 Parties 
           if testing3bytes==true{
       // write code for 3 party testing
       
@@ -336,24 +329,24 @@ fn main() {
           }
           else {
             // full party 440 
-/*
-   Full mode 11       
- ________________
- /.,------------,.\
-///  .=^^^^^^^\__|\\
-\\\   `------.   .//
- `\\`--...._  `;//'
-   `\\.-,___;.//'
-     `\\-..-//'
-ZKP    `\\//'
-         ""
+            /*
+            Full mode 11       
+            ________________
+            /.,------------,.\
+            ///  .=^^^^^^^\__|\\
+            \\\   `------.   .//
+            `\\`--...._  `;//'
+            `\\.-,___;.//'
+                `\\-..-//'
+            ZKP    `\\//'
+                    ""
 
-*/
+            */
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
       
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
             println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-//         std::io::stdin().read_line(&mut name);
+    //         std::io::stdin().read_line(&mut name);
             fs::remove_file(&participantvectorpath).expect("could not remove file");
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
@@ -413,7 +406,7 @@ ZKP    `\\//'
        // Get shares from all party vectors 
         while (counter_party<12)
         {
-            
+          
             if counter_party==id
             {
                 println!("Do nothing for self file creation");
@@ -472,27 +465,26 @@ ZKP    `\\//'
 
         // println!("Secrets Vector Done for Id {} ",id);
         let total_secret_shares=partyone_secrets.len();
-         println!("{:?}",partyone_secrets);
-         println!("{:?}",partyone_secrets.len());
-
-     // full party 440 
-/*
-   Full mode 11       
- ________________
- /.,------------,.\
-///  .=^^^^^^^\__|\\
-\\\   `------.   .//
- `\\`--...._  `;//'
-   `\\.-,___;.//'
-     `\\-..-//'
-ZKP    `\\//'
-         ""
-
+       //  println!("{:?}",partyone_secrets);
+      //   println!("{:?}",partyone_secrets.len());
+      // full party 440 
+            /*
+            Full mode 11       
+            ________________
+            /.,------------,.\
+            ///  .=^^^^^^^\__|\\
+            \\\   `------.   .//
+            `\\`--...._  `;//'
+            `\\.-,___;.//'
+                `\\-..-//'
+            ZKP    `\\//'
+                    ""
 
 
 
-*/
-        
+
+            */
+                    
         //Write own Share to file 
         
         let fullparty=convert_secret_to_bytes(partyone_secrets);
@@ -531,7 +523,7 @@ ZKP    `\\//'
             // find shares belonging to self from file 
             let mut vari_count=0;
             while (vari_count<shared_vector.len()+1)
-            {println!("going through this file {}",secret_share_filepath);
+            {//println!("going through this file {}",secret_share_filepath);
                 if shared_vector[vari_count].index==id
                 {
                     other_party_secret_shares.push(shared_vector[vari_count].clone());
@@ -571,6 +563,10 @@ ZKP    `\\//'
              println!("Groupkey bytes");
              println!("{:?}",Partyfinale.0.to_bytes()); 
              println!("Secret key bytes ");
+             println!("{:?}",Partyfinale.1.key.to_bytes());
+             println!("Public key bytes ");
+             //println!("{:?}",Partyfinale.1.key
+
              //println!("{:?}",&mut Partyfinale
            // println!("{:?}",&mut blabblabbalb.1);
             // println!("Public key from Private key ");
@@ -579,6 +575,9 @@ ZKP    `\\//'
 
 
 }
+
+
+
 fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;315]{
 
 
