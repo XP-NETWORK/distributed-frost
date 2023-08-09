@@ -313,18 +313,6 @@ fn main() {
           // println!("{:?}",&mut blabblabbalb.1);
            println!("Public key from Private key ");
            println!("{:?}",&mut Partyfinale.1.to_public());
- 
-
-
-
-
-
-
-
-
-
-
-
               
           }
           else {
@@ -528,7 +516,7 @@ fn main() {
                 {
                     other_party_secret_shares.push(shared_vector[vari_count].clone());
                     
-                    break;
+                    break; // only one entry of self in any shared secret vector file
                 }
                 vari_count=vari_count+1;
 
@@ -547,25 +535,25 @@ fn main() {
             
             let partystaternd2: DistributedKeyGeneration<keygen::RoundTwo>=partystaternd2.unwrap();
     
-            let mut Partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
+            let mut partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
             
             //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
             println!("Groupkey");
-            println!("{:?}",Partyfinale.0);
+            println!("{:?}",partyfinale.0);
             
     
              println!("Secret key full ");
-              println!("{:?}",&mut Partyfinale.1);
+              println!("{:?}",&mut partyfinale.1);
             // println!("{:?}",&mut blabblabbalb.1);
              println!("Public key from Private key ");
-             println!("{:?}",&mut Partyfinale.1.to_public());
+             println!("{:?}",&mut partyfinale.1.to_public());
              
              println!("Groupkey bytes");
-             println!("{:?}",Partyfinale.0.to_bytes()); 
+             println!("{:?}",partyfinale.0.to_bytes()); 
              println!("Secret key bytes ");
-             println!("{:?}",Partyfinale.1.key.to_bytes());
+             println!("{:?}",partyfinale.1.key.to_bytes());
              println!("Public key bytes ");
-             //println!("{:?}",Partyfinale.1.key
+             //println!("{:?}", partyfinale
 
              //println!("{:?}",&mut Partyfinale
            // println!("{:?}",&mut blabblabbalb.1);
@@ -580,24 +568,27 @@ fn main() {
 
 fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;315]{
 
-
+        // Structure of bytes
+        // ZKP R scaler 40 bytes
+        // ZKP S scaler 40 bytes
+        // 7 Commitments shares 33 bytes=231
+        // index u32 ->u8 = 4 bytes
+        // Total=40+40+33+33+33+33+33+33+33+4=315 
 
     let mut resultbytes:[u8;315]=[0;315];
-    let mut resultdummy: [u8;40]=[0;40];
+    //let mut resultdummy: [u8;40]=[0;40];
     let rbytes=bincode::serialize(&zkp.r).unwrap();
     let split=rbytes.split_at(40);
     resultbytes[0..40].clone_from_slice(&split.0);
+    //copy R bytes to resulant bytes
     let sbytes=bincode::serialize(&zkp.s).unwrap();
     let split=sbytes.split_at(40);
     resultbytes[40..80].clone_from_slice(&split.0);
-    /*
-    let generic_array: [u32; 4] = [1, 2, 3, 4];
-    let fixed_size_array: [u8; 16] = unsafe { std::mem::transmute(generic_array) };
+    //copy S bytes to resulant bytes
     
-     */
-    //loop through 7 Commitments of 33 bytes 
     let mut commit_count=0;
     let mut startin_byte_index=80;
+    // start loop to copy all commitment vectors to resulant bytes
     while commit_count<7
     {   let ending_index=startin_byte_index+33;
         let commitmentbytes=commitments_party.commitments[commit_count].to_bytes();
@@ -607,14 +598,9 @@ fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Part
         commit_count=commit_count+1;
 
     }
-    
+    // copy index bytes in the resultant buffer
     resultbytes[startin_byte_index..315].copy_from_slice(index.to_be_bytes().as_slice());
-    
-
-      
-
-
-
+    //return resultbytes
     resultbytes
 }
 pub struct ZKPSecretKey {
@@ -627,12 +613,20 @@ pub struct ZKPSecretKey {
 
 fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
 {
+    // Structure of bytes
+        // ZKP R scaler 40 bytes
+        // ZKP S scaler 40 bytes
+        // 7 Commitments shares 33 bytes=231
+        // index u32 ->u8 = 4 bytes
+        // Total=40+40+33+33+33+33+33+33+33+4=315 
     let mut commit_vector:Vec<k256::ProjectivePoint>=vec!();
     
-    let mut bytes_sequence :[u8;4]=[0,1,2,3];
+    let mut bytes_sequence :[u8;4]=[0,0,0,0];
     bytes_sequence.clone_from_slice(&party_bytes[311..315]);
+
     
     //let value_index=indexconvert as u32
+    // convert u8 to u32 formation of Index
     let index_u32_integer: u32 = ((bytes_sequence[0] as u32) << 24)
                     | ((bytes_sequence[1] as u32) << 16)
                     | ((bytes_sequence[2] as u32) << 8)
@@ -640,11 +634,20 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
    
     let mut bytes_for_r: [u8;40]=[0;40];
     let mut bytes_for_s:[u8;40]=[0;40];
+    // copy r and s bytes from slice 
     bytes_for_r.copy_from_slice(&party_bytes[0..40]);
     bytes_for_s.copy_from_slice(&party_bytes[40..80]);
-   
+
+    // create S and R from De-Serializer 
+          
+    let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_s.as_ref());
+    let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_r.as_ref());
+    // create a new zkp with r and S for formation of participant
+    let mut zkpfull :frost_secp256k1::nizk::NizkOfSecretKey= frost_secp256k1::nizk::NizkOfSecretKey { s: skey.unwrap(), r: rkey.unwrap() };
+    
     let mut commit=0;
     let mut start_bytes=80;
+    // loop through commitment of  33 bytes to get all commitment vectors
     while(commit<7)
     {
         let endvalue=start_bytes+33;
@@ -663,21 +666,8 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
         commit=commit+1;
 
     }
-    let mut poof :ZKPSecretKey;
     
-
-
-
-
-    
-    let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_s.as_ref());
-    let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_r.as_ref());
-    
-    let mut zkpfull :frost_secp256k1::nizk::NizkOfSecretKey= frost_secp256k1::nizk::NizkOfSecretKey { s: skey.unwrap(), r: rkey.unwrap() };
-    
-
-
-    let mut party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
+        let mut party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
 
 
 party_convert
