@@ -40,24 +40,6 @@ use k256::ecdsa::signature::Signer;
 use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
-//use k256::Scalar;
-//use k256::SecretKey;
-// //use k256::{Scalar, SecretKey, SecretKeyBytes};
-// use std::fs;
-// use std::fs::File;
-// use std::io::prelude::*;
-// use std::io::Write;
-// use serde;
-// use std::convert::TryInto;
-
-// use k256::ecdsa::Signature;
-// use k256::ecdsa::signature::Signer;
-
-// use core::convert::TryFrom;
-// use generic_array::GenericArray;
-// use generic_array::typenum::Unsigned;
-// //use k256::Scalar;
-
 
 fn lines_from_file(filename: &str) -> Vec<String> {
     let mut file = match File::open(filename) {
@@ -510,12 +492,7 @@ ZKP    `\\//'
          println!("{:?}",partyone_secrets);
          println!("{:?}",partyone_secrets.len());
 
-        //  let partysample=partyone_secrets[0].clone();
-        //  let xyz=bincode::serialize(&partysample);
-        //  println!("{}",&xyz.as_ref().unwrap().len());
-        //  println!("{:?}",&xyz.as_ref().unwrap());
-        //  println!("/////////////////////////////////////////////////");
-        //  let fullparty=bincode::serialize(partyone_secrets);
+     
         
         //Write own Share to file 
         
@@ -592,65 +569,7 @@ ZKP    `\\//'
              println!("Public key from Private key ");
              println!("{:?}",&mut Partyfinale.1.to_public());
 
-            // println!("Public key from Pubic key ");
-            // let pkey=blabblabbalb.unwrap().1.to_public();
-            // println!("{:?}",pkey);
-    
-            //partystaternd2.unwrap();
-            //let (party_group_key: GroupKey , party_secret_key: SecretKey)=partystaternd2.unwrap().finish(&p1.public_key().unwrap());
-            //let (xy, GroupKey, xy3, SecretKey)=partystaternd2.unwrap().finish(&p1.public_key().unwrap());
-            //let party_groupkey=xy.iter();
-               // let xy=partystaternd2.finish(&p1.public_key().unwrap());
-                //println!("{:?}", xy);
-            
-        }
-    
-           /*
-            let mut alice_other_participants: Vec<Participant> = vec!(bob.clone(), carol.clone());
-            let alice_state = DistributedKeyGeneration::<_>::new(&params, &alice.index, &alice_coefficients,
-                                                                 &mut alice_other_participants).or(Err(()))?;
-            let alice_their_secret_shares = alice_state.their_secret_shares()?;
-            let alice_state = alice_state.to_round_two(alice_my_secret_shares)?;
-            //! # let (alice_group_key, alice_secret_key) = alice_state.finish(&alice.public_key().unwrap())?;
-             */
-          
-    
-                // let mut Othervectors :Vec<Participant>=vec!();
-    
-                
-
-
-        // let mut vectorbytes=convert_secret_to_bytes(partyone_secrets);
-         //let mut bytesvalues: [u8;44]=[0;44];
-         //bytesvalues.copy_from_slice(&vectorbytes[0..44]);
-         //let share_value: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
-         //println!("{:?}",share_value.unwrap());
-
-
-        // copy shared vectors 
-
-        //  println!("{:?}",shared_vector[0]);
-        //  println!("{:?}",shared_vector[1]);
-        //  println!("{:?}",shared_vector[2]);
-        //  println!("{:?}",shared_vector[3]);
-
-
-         
-     //l   let secretsharevector:Result<&Vec<SecretShare>, Box<bincode::ErrorKind>>  =bincode::deserialize(&secret_bytes.as_slice());
-
-
-
-         
-         
-         //partysample.clone_from(&partyone_secrets[0]);
-
-        // println!("length of secrets{}",partyone_secrets.capacity());
-        // println!("{:?}",partyone_secrets[0]);
-        // println!("{:?}",partyone_secrets[1]);
-        //send these secrets to other parties for proceeding to round 2
-        
-        //
-
+     
         
 
 
@@ -660,27 +579,8 @@ fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Part
 
 
     let mut resultbytes:[u8;315]=[0;315];
-    // Structure of bytes
-    // ZKP R scaler 32 bytes //40bytes bincode
-    // ZKP S scaler 32 bytes //40 bbytes bincode
-    // 7 Commitments shares 33 bytes=231
-    // index u32 ->u8 = 4 bytes
-    // Total=32+32+33+33+33+33+33+33+33+4=299 
-    //total=40+40++33+33+33+33+33+33+33+4=315
-   // let mut resultdummy: [u8;40]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,0];
     let mut resultdummy: [u8;40]=[0;40];
-    //let zkpbytes=zkp.r.to_bytes();
-    //let zkpsplitter=zkpbytes.split_at(32);
-    //resultdummy.clone_from_slice(zkpsplitter.0);
-    //resultbytes[0..32].clone_from_slice(zkpsplitter.0);
-    //resultbytes[0..32]=resultdummy;
-    //S bytes 
-    //let zkpbytes: k256::elliptic_curve::generic_array::GenericArray<u8, _>=zkp.s.to_bytes();
-    //let zkpsplitter=zkpbytes.split_at(32);
-    //resultdummy.clone_from_slice(zkpsplitter.0);
-    //resultbytes[32..64].clone_from_slice(zkpsplitter.0);
     let rbytes=bincode::serialize(&zkp.r).unwrap();
-    //println!("{:?}",r);
     let split=rbytes.split_at(40);
     resultbytes[0..40].clone_from_slice(&split.0);
     let sbytes=bincode::serialize(&zkp.s).unwrap();
@@ -747,20 +647,12 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
         let mut bytescommit:[u8;33]=[0;33];
         
         
-        //genarray.clone_from(&party_bytes[start_bytes..endvalue]);
-        
-        //let mut byte_projective:k256::ProjectivePoint;
-
+       
         bytescommit.copy_from_slice(&party_bytes[start_bytes..endvalue]);
         let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
-        //genarray.copy_from_slice(bytescommit.as_ref());
-        
-        //byte_p // zkpfull.r.add(&rkey);
-    // zkpfull.s.add(&skey);rojective.clon
+       
         let mut byte_projective=k256::ProjectivePoint::from_bytes(&genarray).unwrap(); 
-        //let mut genarray: ge
-        //let mut bytes_affine:AffinePoint=AffinePoint::from_bytes(&party_bytes[start_bytes..endvalue]).unwrap();
-        
+               
         commit_vector.push(byte_projective);
 
         start_bytes=endvalue;
@@ -769,48 +661,16 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
     }
     let mut poof :ZKPSecretKey;
     
+
+
+
+
     
     let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_s.as_ref());
     let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_r.as_ref());
-    //poof.r.clone_from(&rkey);
-    //poof.s.clone_from(&skey);
+    
     let mut zkpfull :frost_secp256k1::nizk::NizkOfSecretKey= frost_secp256k1::nizk::NizkOfSecretKey { s: skey.unwrap(), r: rkey.unwrap() };
-    // zkpfull.r.add(&rkey);
-    // zkpfull.s.add(&skey);
-
-
-    //let mut alpha:dyn secp256k1::SecretKey;
-    //Scalar::from(bytes_for_r.as_ref());
-  
-
-
-
-    // match SecretKey::from_bytes(&bytes) {
-    //     Ok(secret_key) => {
-    //         // The SecretKey is essentially a wrapper around Scalar
-    //         let scalar: Scalar = secret_key.to_secret_scalar();
-            
-    //         // Do something with the scalar...
-    //         println!("Scalar: {}", scalar);
-    //     }
-    //     Err(e) => {
-    //         // Handle the error...
-    //         eprintln!("Failed to create scalar: {}", e);
-    //     }
-    // }
     
-//     let mut poof:ZKPSecretKey;
-//     let mut scalar_result_r = Scalar::from_bytes_mod_order(&bytes_for_r);
-//     let mut scalar_result_s = Scalar::from_bytes_mod_order(&bytes_for_s);
-    
-//     //poof.r.add(&Scalar::from(&bytes_for_r));
-//     Secp256k1
-//   let rscaler=SecretKey::from_be_bytes(&bytes_for_r);
-
-    
-
-
-
 
 
     let mut party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
@@ -818,12 +678,7 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
 
 party_convert
 }
-//     let x: Vec<k256::ProjectivePoint>;
-//     //let ceoff: frost_secp256k1::keygen::Coefficients;
-//     let index: u32;
-//     let alpha :frost_secp256k1::nizk::NizkOfSecretKey;
-//     return (x,alpha,index);
-//     }
+
 
     fn convert_party_to_bytes2(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;299]{
 
