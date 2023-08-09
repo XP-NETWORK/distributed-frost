@@ -167,10 +167,7 @@ fn main() {
       let bytes_committed=convert_party3_to_bytes(&id, &party, &party.proof_of_secret_key);
       let partyconv=convert_bytes_to_party3(&bytes_committed);
       party.clone_from(&partyconv);
-      //party.clone_from();
-      //println!("original Party{:?}",party);
-      //println!("Converted Party {:?}",partyfrmbyes);
-
+      // Clone to convert Z to zero in the original Party 
 
         
       let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
@@ -334,7 +331,11 @@ fn main() {
 
 
 
-// full party 440 
+
+              
+          }
+          else {
+            // full party 440 
 /*
    Full mode 11       
  ________________
@@ -347,37 +348,18 @@ fn main() {
 ZKP    `\\//'
          ""
 
-
-
-
 */
-              
-          }
-          else {
-
-
-
-
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
-
-        
+      
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
-        
-         println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
+            println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
 //         std::io::stdin().read_line(&mut name);
             fs::remove_file(&participantvectorpath).expect("could not remove file");
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
-        
-        // Convert original party to 32 bytes party with z value zero 
+                // Convert original party to 32 bytes party with z value zero 
          let partyconv=convert_bytes_to_party(&bytes_committed);
          party.clone_from(&partyconv);
-    
-    
-    
-    
-    
-        
     
     // Create all files for computation if filler = ture
         let mut filler =false;
@@ -428,6 +410,7 @@ ZKP    `\\//'
         let mut  other_Party_vectors: Vec<Participant>= vec!();
         let mut counter_party=1;
        // other_Party_vectors.clear();
+       // Get shares from all party vectors 
         while (counter_party<12)
         {
             
@@ -459,8 +442,8 @@ ZKP    `\\//'
                     }
                     else
                     {
-                        println!("             ",);
-                        println!("{:?}",party_input);
+                        //println!("             ",);
+                        //println!("{:?}",party_input);
                          other_Party_vectors.push(party_input);
                     
                     
@@ -473,7 +456,7 @@ ZKP    `\\//'
             counter_party=counter_party+1;
 
         }
-        println!("{}",other_Party_vectors.len());
+        //println!("{}",other_Party_vectors.len());
         println!("{}",counter_party);
         std::io::stdin().read_line(&mut name);
 
@@ -577,15 +560,21 @@ ZKP    `\\//'
             //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
             println!("Groupkey");
             println!("{:?}",Partyfinale.0);
-             
+            
     
              println!("Secret key full ");
               println!("{:?}",&mut Partyfinale.1);
             // println!("{:?}",&mut blabblabbalb.1);
              println!("Public key from Private key ");
              println!("{:?}",&mut Partyfinale.1.to_public());
-
-     
+             
+             println!("Groupkey bytes");
+             println!("{:?}",Partyfinale.0.to_bytes()); 
+             println!("Secret key bytes ");
+             //println!("{:?}",&mut Partyfinale
+           // println!("{:?}",&mut blabblabbalb.1);
+            // println!("Public key from Private key ");
+            // println!("{:?}",&mut Partyfinale.1.to_public());
         
 
 
@@ -902,21 +891,3 @@ fn convert_bytes_to_3secret(secretbytes:[u8;88] )->Vec<SecretShare>
 
 }
 
-/*
-
-    while count<total
-    {   
-        let mut bytesvalues: [u8;44]=[0;44];
-        bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
-        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
-        secret_vector_from_bytes.push(clone_secret_share.unwrap());
-                count=count+1;
-         startindex=endindex;
-         endindex=endindex+44;
-
-    }
-    
-    secret_vector_from_bytes
-
-}
-*/
