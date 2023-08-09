@@ -1,10 +1,8 @@
-//use core::slice::SlicePattern;
+
 #[cfg(feature = "std")]
 use std::vec::Vec;
-
 #[cfg(not(feature = "std"))]
 use core::cmp::Ordering;
-
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
@@ -19,12 +17,11 @@ use k256::AffinePoint;
 use k256::PublicKey;
 use frost_secp256k1;
 use frost_secp256k1::Participant;
-//use frost_secp256k1::Participant::*;
+
 use frost_secp256k1::Parameters;
 use k256::Scalar;
 use k256::Secp256k1;
 use k256::SecretKey;
-//use k256::elliptic_curve::Scalar;
 use k256::elliptic_curve::ScalarArithmetic;
 use k256::elliptic_curve::group::GroupEncoding;
 use std::fs;
@@ -33,10 +30,8 @@ use std::io::prelude::*;
 use std::io::Write;
 use serde;
 use std::convert::TryInto;
-
 use k256::ecdsa::Signature;
 use k256::ecdsa::signature::Signer;
-
 use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
@@ -59,6 +54,9 @@ fn lines_from_file(filename: &str) -> Vec<String> {
 
 fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
 {
+    //Structure of Secretbytes 
+    // every secret share is 44 bytes long 
+    // loop through all bytes 
     let total=secretvector.len();
     let mut count=0;
     let mut secretbytes: [u8;440]=[0;440];
@@ -67,27 +65,22 @@ fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
     while count<total
     {   
         let writebytes: Vec<u8>=bincode::serialize(&secretvector[count]).unwrap();
-        
+       // convert secret vector[count] to bytes
         let size: usize =writebytes.len();
         endindex=endindex+size;
         secretbytes[startindex..endindex].copy_from_slice(writebytes.as_slice());
-
-        //bytes_for_r.copy_from_slice(&party_bytes[0..40]);
-        
-        println!("{}",size);
-
-        count=count+1;
+         count=count+1;
         startindex=endindex;
 
     }
-    
-
     secretbytes
-
 }
+
 fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
 {
-    
+    //Structure of Secretbytes 
+    // every secret share is 44 bytes long 
+    // loop through all bytes 
     let mut secret_vector_from_bytes :Vec<SecretShare>=vec![];
     
      let mut startindex=0;
@@ -104,14 +97,16 @@ fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
          startindex=endindex;
          endindex=endindex+44;
 
-    }
-    
+    }  
     secret_vector_from_bytes
 
 }
 
-//
-//Line 150 for Main 
+
+
+
+
+//Line 110 for Main 
 fn main() {
 
     let mut name = String::new();
@@ -190,7 +185,7 @@ fn main() {
                   Ok(file) => file,
                   Err(_) => panic!("no such file"),
               };
-              println!("{:?}",path_to_read_party_vector);
+             // println!("{:?}",path_to_read_party_vector);
               let mut result_bytes_from_file:[u8;150]=[0;150];
               let result_read=file.read_exact(&mut result_bytes_from_file);
 
@@ -407,7 +402,7 @@ fn main() {
                     Ok(file) => file,
                     Err(_) => panic!("no such file"),
                 };
-                println!("{:?}",path_to_read_party_vector);
+               // println!("{:?}",path_to_read_party_vector);
                 let mut result_bytes_from_file:[u8;315]=[0;315];
                 let result_read=file.read_exact(&mut result_bytes_from_file);
 
@@ -438,7 +433,7 @@ fn main() {
 
         }
         //println!("{}",other_Party_vectors.len());
-        println!("{}",counter_party);
+        //println!("{}",counter_party);
         std::io::stdin().read_line(&mut name);
 
        // Go For DKG Part-1
@@ -553,13 +548,14 @@ fn main() {
              println!("Secret key bytes ");
              println!("{:?}",partyfinale.1.key.to_bytes());
              println!("Public key bytes ");
+             println!("{:?}",partyfinale.1.to_public().share.to_bytes());
              //println!("{:?}", partyfinale
 
              //println!("{:?}",&mut Partyfinale
            // println!("{:?}",&mut blabblabbalb.1);
             // println!("Public key from Private key ");
             // println!("{:?}",&mut Partyfinale.1.to_public());
-        
+    
 
 
 }
