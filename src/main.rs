@@ -492,7 +492,23 @@ ZKP    `\\//'
          println!("{:?}",partyone_secrets);
          println!("{:?}",partyone_secrets.len());
 
-     
+     // full party 440 
+/*
+   Full mode 11       
+ ________________
+ /.,------------,.\
+///  .=^^^^^^^\__|\\
+\\\   `------.   .//
+ `\\`--...._  `;//'
+   `\\.-,___;.//'
+     `\\-..-//'
+ZKP    `\\//'
+         ""
+
+
+
+
+*/
         
         //Write own Share to file 
         
@@ -883,3 +899,24 @@ fn convert_bytes_to_3secret(secretbytes:[u8;88] )->Vec<SecretShare>
     secret_vector_from_bytes
 
 }
+
+}
+
+/*
+
+    while count<total
+    {   
+        let mut bytesvalues: [u8;44]=[0;44];
+        bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
+        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
+        secret_vector_from_bytes.push(clone_secret_share.unwrap());
+                count=count+1;
+         startindex=endindex;
+         endindex=endindex+44;
+
+    }
+    
+    secret_vector_from_bytes
+
+}
+*/
