@@ -343,7 +343,7 @@ fn main() {
             if id==1
             {
                 // do some special work if id ==1 
-                let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+                let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                // let signerres=aggregator.get_signers();
                 let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
                          
@@ -353,8 +353,17 @@ fn main() {
                 //let pubkey: Result<PublicCommitmentShareList, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.unwrap());
                 let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].0.to_bytes());
                 println!("{:?}",value.unwrap().to_bytes());
-                let bytes =public_commitment_to_bytes(p1_public_comshares);
-               println!("{:?}",bytes);
+                let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].1.to_bytes());
+                println!("{:?}",value.unwrap().to_bytes());
+                let bytesoff =public_commitment_to_bytes(&p1_public_comshares);
+               println!("{:?}",bytesoff);
+               println!("***********************");
+               println!("***********************");
+               println!("***********************");
+               println!("{:?}",p1_public_comshares);
+               println!("***********************");
+               println!("*****From return function*****");
+               println!("{:?}",public_bytes_to_commitment(bytesoff));
                //let xya:PublicCommitmentShareList=new PublicCommitmentShareList();
             //    xya.participant_index=1;
             //    xya.commitments[0].0.clone_from(&value.unwrap());
@@ -1237,7 +1246,7 @@ pub struct PublicCommitShareList {
     pub commitments: Vec<(AffinePoint, AffinePoint)>,
 }
 
-fn public_commitment_to_bytes(publiccomitmentsharelist:PublicCommitmentShareList )->[u8;70] 
+fn public_commitment_to_bytes(publiccomitmentsharelist:&PublicCommitmentShareList )->[u8;70] 
 {
     // Struct 33 +33 +4 =70bytes
     let mut returnbytes: [u8;70]=[0;70];
@@ -1252,15 +1261,24 @@ fn public_commitment_to_bytes(publiccomitmentsharelist:PublicCommitmentShareList
 fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
 {
     
-    let mut bytesvalue: [u8;70]=[0;70];
+    //let mut bytesvalue: [u8;70]=[0;70];
     let mut indexbytes:[u8;4]=[0;4];
-    indexbytes.copy_from_slice(&bytesvalue[66..70]);
+    indexbytes.copy_from_slice(&returnbytes[66..70]);
     let indexcommit:u32=u32::from_be_bytes(indexbytes);
     
-     let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
+     let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
     
-    // let mut affinebytes:[u8;33]=[0;33];
-    // affinebytes.copy_from_slice(&bytesvalue[0..33]);
+    
+     let mut affinebytes:[u8;33]=[0;33];
+     affinebytes.copy_from_slice(&returnbytes[0..33]);
+     let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     
+     affinebytes.copy_from_slice(&returnbytes[33..66]);
+     let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     p1_public_comshares.commitments[0].0.clone_from(&affine1);
+     p1_public_comshares.commitments[0].1.clone_from(&affine2);
     // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
     // p1_public_comshares.commitments[0].0.clone_from(source)
     // p1_public_comshares.commitments[0].1.clone_from(source)
