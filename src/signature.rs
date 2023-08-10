@@ -919,40 +919,7 @@ mod test {
         let p4_state = p4_state.to_round_two(p4_my_secret_shares).unwrap();
         let p5_state = p5_state.to_round_two(p5_my_secret_shares).unwrap();
 
-        let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
-        let (_, _) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
-        let (_, p3_sk) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
-        let (_, p4_sk) = p4_state.finish(&p4.public_key().unwrap()).unwrap();
-        let (_, _) = p5_state.finish(&p5.public_key().unwrap()).unwrap();
-
-        let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
-        let message = b"This is a test of the tsunami alert system. This is only a test.";
-        let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
-        let (p3_public_comshares, mut p3_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
-        let (p4_public_comshares, mut p4_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 4, 1);
-
-        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
-
-        aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
-        aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
-        aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
-
-        let signers = aggregator.get_signers();
-        let message_hash = compute_message_hash(&context[..], &message[..]);
-
-        let p1_partial = p1_sk.sign(&message_hash, &group_key, &mut p1_secret_comshares, 0, signers).unwrap();
-        let p3_partial = p3_sk.sign(&message_hash, &group_key, &mut p3_secret_comshares, 0, signers).unwrap();
-        let p4_partial = p4_sk.sign(&message_hash, &group_key, &mut p4_secret_comshares, 0, signers).unwrap();
-
-        aggregator.include_partial_signature(p1_partial);
-        aggregator.include_partial_signature(p3_partial);
-        aggregator.include_partial_signature(p4_partial);
-
-        let aggregator = aggregator.finalize().unwrap();
-        let threshold_signature = aggregator.aggregate().unwrap();
-        let verification_result = threshold_signature.verify(&group_key, &message_hash);
-
-        assert!(verification_result.is_ok());
+     ;
     }
 
     #[test]

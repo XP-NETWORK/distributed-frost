@@ -1,4 +1,5 @@
 
+use std::io::Read;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -10,9 +11,13 @@ use alloc::vec::Vec;
 use frost_secp256k1::DistributedKeyGeneration;
 use frost_secp256k1::GroupKey;
 use frost_secp256k1::IndividualSecretKey;
+use frost_secp256k1::SignatureAggregator;
+use frost_secp256k1::compute_message_hash;
 use frost_secp256k1::keygen;
 use frost_secp256k1::keygen::SecretShare;
 use frost_secp256k1::precomputation::CommitmentShare;
+use frost_secp256k1::precomputation::PublicCommitmentShareList;
+use frost_secp256k1::signature::Aggregator;
 use k256::AffinePoint;
 use k256::PublicKey;
 use frost_secp256k1;
@@ -24,6 +29,8 @@ use k256::Secp256k1;
 use k256::SecretKey;
 use k256::elliptic_curve::ScalarArithmetic;
 use k256::elliptic_curve::group::GroupEncoding;
+use rand::rngs::OsRng;
+use rand::seq::index;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -35,7 +42,7 @@ use k256::ecdsa::signature::Signer;
 use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
-
+use crate::frost_secp256k1::generate_commitment_share_lists;
 fn lines_from_file(filename: &str) -> Vec<String> {
     let mut file = match File::open(filename) {
         Ok(file) => file,
@@ -146,10 +153,11 @@ fn main() {
         let mut bufferfile: [u8;33]=[0;33];
           let _ = file.read_exact( &mut bufferfile);
         
-          let testing3bytes=false;
+          let testing3bytes=true;
 
     // Testing code with 3 Parties 
-          if testing3bytes==true{
+          if testing3bytes==true
+    {
       // write code for 3 party testing
       
       let bytes_committed=convert_party3_to_bytes(&id, &party, &party.proof_of_secret_key);
@@ -296,20 +304,204 @@ fn main() {
           
           let partystaternd2: DistributedKeyGeneration<keygen::RoundTwo>=partystaternd2.unwrap();
   
-          let mut Partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
+          let mut partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
           
-          //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
-          println!("Groupkey");
-          println!("{:?}",Partyfinale.0);
+        //   //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
+        //   println!("Groupkey");
+        //   println!("{:?}",Partyfinale.0);
            
   
-           println!("Secret key full ");
-            println!("{:?}",&mut Partyfinale.1);
-          // println!("{:?}",&mut blabblabbalb.1);
-           println!("Public key from Private key ");
-           println!("{:?}",&mut Partyfinale.1.to_public());
+        //    println!("Secret key full ");
+        //     println!("{:?}",&mut Partyfinale.1);
+        //   // println!("{:?}",&mut blabblabbalb.1);
+        //    println!("Public key from Private key ");
+        //    println!("{:?}",&mut Partyfinale.1.to_public());
+
+           println!("Groupkey");
+           println!("{:?}",partyfinale.0);
+           
+   
+            println!("Secret key full ");
+             println!("{:?}",&mut partyfinale.1);
+           // println!("{:?}",&mut blabblabbalb.1);
+            println!("Public key from Private key ");
+            println!("{:?}",&mut partyfinale.1.to_public());
+            
+            println!("Groupkey bytes");
+            println!("{:?}",partyfinale.0.to_bytes()); 
+            println!("Secret key bytes ");
+            println!("{:?}",partyfinale.1.key.to_bytes());
+            println!("Public key bytes ");
+            println!("{:?}",partyfinale.1.to_public().share.to_bytes());
+
+            // Move to Partial Signature Creation 
+            // Assign Party 1 as leader 
+            //
+            let context = b"CONTEXT STRING FOR XP NFT BRIDGE TEST FOR APPLE>D>HAIDER>SMITH";
+            let message = b"This is a test message from Xp Bridge piece Meal 20230815";
+
+            if id==1
+            {
+                // do some special work if id ==1 
+                let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+               // let signerres=aggregator.get_signers();
+                let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
+                         
+                println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes());
+                println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes().len());
+                //let sample=bincode::serialize(&p1_public_comshares.commitments[0]);
+                //let pubkey: Result<PublicCommitmentShareList, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.unwrap());
+                let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].0.to_bytes());
+                println!("{:?}",value.unwrap().to_bytes());
+                let bytes =public_commitment_to_bytes(p1_public_comshares);
+               println!("{:?}",bytes);
+               //let xya:PublicCommitmentShareList=new PublicCommitmentShareList();
+            //    xya.participant_index=1;
+            //    xya.commitments[0].0.clone_from(&value.unwrap());
+
+               // let xy=PublicCommitmentShareList::from(p1_public_comshares);
+                //println!("{:?}",pubkey.unwrap().commitments[0].0.to_bytes());
+
+                let xyz:PublicCommitmentShareList;
+               // xyz.participant_index=1;
+                //let value=AffinePoint::to_bytes(&p1_public_comshares.commitments[0].0);
+
+                //let part1=p1_public_comshares.commitments[0].0.to_bytes();
+                //let part2=p1_public_comshares.commitments[0].1.to_bytes();
+
+                // write commitment share and public key in files
+                let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
+              //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+                println!("{}",public_comshare_filepath);
+                let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
+                let result=secret_file.write_all(&fullparty);
+                
+                //PublicKey::from_sec1_bytes(bytes)
+
+                let message_hash = compute_message_hash(&context[..], &message[..]);
+                let signers = aggregator.get_signers();
+                println!("{:?}",signers);
+                
+                //let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
+
+                
+                //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+            }
+            else {
+                let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+                // write commitment share and public key in files
+
+                let message_hash = compute_message_hash(&context[..], &message[..]);
+             //   let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
+
+                
+            }
+             /* 
+            
+            
+                
+                
+                aggregator.include_signer(1,p1_public_comshares.commitments[0],partyfinale.1.to_public());
+            
+                let messagehash=compute_message_hash(context, message);
+    
+    
+    */  
+        /*
+    
+            aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
+            aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
+            aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
+    
+            let signers = aggregator.get_signers();
+            let message_hash = compute_message_hash(&context[..], &message[..]);
+    
+            let p1_partial = p1_sk.sign(&message_hash, &group_key, &mut p1_secret_comshares, 0, signers).unwrap();
+            let p3_partial = p3_sk.sign(&message_hash, &group_key, &mut p3_secret_comshares, 0, signers).unwrap();
+            let p4_partial = p4_sk.sign(&message_hash, &group_key, &mut p4_secret_comshares, 0, signers).unwrap();
+    
+            aggregator.include_partial_signature(p1_partial);
+            aggregator.include_partial_signature(p3_partial);
+            aggregator.include_partial_signature(p4_partial);
+    
+            let aggregator = aggregator.finalize().unwrap();
+            let threshold_signature = aggregator.aggregate().unwrap();
+            let verification_result = threshold_signature.verify(&group_key, &message_hash);
+    
+            assert!(verification_result.is_ok())
+        
+        
+         
+    
+         ! # let (alice_public_comshares, mut alice_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
+    //! # let (bob_public_comshares, mut bob_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 2, 1);
+    //! # let (carol_public_comshares, mut carol_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
+    //! #
+    //! # let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
+    //! # let message = b"This is a test of the tsunami alert system. This is only a test.";
+    //! #
+    //! # let message_hash = compute_message_hash(&context[..], &message[..]);
+    //! #
+    //! # let mut aggregator = SignatureAggregator::new(params, bob_group_key.clone(), context.to_vec(), message.to_vec());
+    //! #
+    //! # aggregator.include_signer(1, alice_public_comshares.commitments[0], (&alice_secret_key).into());
+    //! # aggregator.include_signer(3, carol_public_comshares.commitments[0], (&carol_secret_key).into());
+    //! #
+    //! # let signers = aggregator.get_signers();
+    //!
+    //! let alice_partial = alice_secret_key.sign(&message_hash, &alice_group_key,
+    //!                                           &mut alice_secret_comshares, 0, signers)?;
+    //! let carol_partial = carol_secret_key.sign(&message_hash, &carol_group_key,
+    //!                                           &mut carol_secret_comshares, 0, signers)?;
+    //!
+    //! aggregator.include_partial_signature(alice_partial);
+    //! aggregator.include_partial_signature(carol_partial);
+    //! # Ok(()) }
+    //! # #[cfg(feature = "std")]
+    //! # fn main() { assert!(do_test().is_ok()); }
+    //! # #[cfg(not(feature = "std"))]
+    //! # fn main() { }
+    //! ```
+    //!
+    //! ## Signature Aggregation
+    //!
+    //! Once all the expected signers have sent their partial signatures, the
+    //! aggregator attempts to finalize its state, ensuring that there are no errors
+    //! thus far in the partial signatures, before finally attempting to complete
+    //! the aggregation of the partial signatures into a threshold signature.
+    //!
+    //! ```rust,ignore
+    //! let aggregator = aggregator.finalize()?;
+    //! ```
+    //!
+    //! If the aggregator could not finalize the state, then the `.finalize()` method
+    //! will return a `HashMap<u32, &'static str>` describing participant indices and the issues
+    //! encountered for them.  These issues are **guaranteed to be the fault of the aggregator**,
+    //! e.g. not collecting all the expected partial signatures, accepting two partial
+    //! signatures from the same participant, etc.
+    //!
+    //! And the same for the actual aggregation, if there was an error then a
+    //! `HashMap<u32, &'static str>` will be returned which maps participant indices to issues.
+    //! Unlike before, however, these issues are guaranteed to be the fault of the
+    //! corresponding participant, specifically, that their partial signature was invalid.
+    //!
+    //! ```rust,ignore
+    //! let threshold_signature = aggregator.aggregate()?;
+    //! ```
+    //!
+    //! Anyone with the group public key can then verify the threshold signature
+    //! in the same way they would for a standard Schnorr signature.
+    //!
+    //! ```rust,ignore
+    //! let verified = threshold_signature.verify(&alice_group_key, &message_hash)?;
+    
+    
+    */
+
+
+
               
-          }
+    }
           else {
             // full party 440 
             /*
@@ -565,21 +757,25 @@ fn main() {
         ,::; |        '.
         ,::|  \___,-.  c)
         ;::|     \   '-'
-        ;::|      \
-        ;::|   _.=`\
-        `;:|.=` _.=`\
-        '|_.=`   __\
-        `\_..==`` /
-            .'.___.-'.
-        /          \
-        s ('--......--')
-        /'--......--'\
-        `"--......--"
-
-
+            
  */
+    /* 
+        let context = b"CONTEXT STRING FOR XP NFT BRIDGE TEST FOR APPLE>D>HAIDER>SMITH";
+
+        let message = b"This is a test message from Xp Bridge piece Meal 20230815";
+        let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
+        let message = b"This is a test of the tsunami alert system. This is only a test.";
+        let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
+        let (p3_public_comshares, mut p3_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
+        let (p4_public_comshares, mut p4_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 4, 1);
+            
+            let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
+            aggregator.include_signer(1,p1_public_comshares.commitments[0],partyfinale.1.to_public());
+            let signerres=aggregator.get_signers();
+            let messagehash=compute_message_hash(context, message);
 
 
+*/  
     /*
        let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
         let (_, _) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
@@ -1034,3 +1230,48 @@ fn convert_bytes_to_3secret(secretbytes:[u8;88] )->Vec<SecretShare>
 
 }
 
+pub struct PublicCommitShareList {
+    /// The participant's index.
+    pub participant_index: u32,
+    /// The published commitments.
+    pub commitments: Vec<(AffinePoint, AffinePoint)>,
+}
+
+fn public_commitment_to_bytes(publiccomitmentsharelist:PublicCommitmentShareList )->[u8;70] 
+{
+    // Struct 33 +33 +4 =70bytes
+    let mut returnbytes: [u8;70]=[0;70];
+    returnbytes[0..33].copy_from_slice(&publiccomitmentsharelist.commitments[0].0.to_bytes());
+    returnbytes[33..66].copy_from_slice(&publiccomitmentsharelist.commitments[0].1.to_bytes());
+    returnbytes[66..70].copy_from_slice(&publiccomitmentsharelist.participant_index.to_be_bytes());
+    
+    returnbytes    
+
+}
+
+fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
+{
+    
+    let mut bytesvalue: [u8;70]=[0;70];
+    let mut indexbytes:[u8;4]=[0;4];
+    indexbytes.copy_from_slice(&bytesvalue[66..70]);
+    let indexcommit:u32=u32::from_be_bytes(indexbytes);
+    
+     let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
+    
+    // let mut affinebytes:[u8;33]=[0;33];
+    // affinebytes.copy_from_slice(&bytesvalue[0..33]);
+    // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
+    // p1_public_comshares.commitments[0].0.clone_from(source)
+    // p1_public_comshares.commitments[0].1.clone_from(source)
+   // bytesvalue.clone_from_slice(&returnbytes[0..33]);
+
+    //let mut returncommit: PublicCommitmentShareList=
+    //returncommit.participant_index=1;
+    //let mut genarray=GenericArray::from_slice(bytesvalue.as_ref());
+   // let mut returncommit: PublicCommitmentShareList=PublicCommitShareList::into(self)
+    //let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
+    //let affine1=AffinePoint::from_bytes(&returnbytes[0..33]).unwrap();
+p1_public_comshares
+
+}
