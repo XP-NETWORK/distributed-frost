@@ -556,6 +556,164 @@ fn main() {
             // println!("Public key from Private key ");
             // println!("{:?}",&mut Partyfinale.1.to_public());
     
+    // need for signing 
+/*
+            ,....,
+            ,::::::<
+        ,::/^\"``.
+        ,::/, `   e`.
+        ,::; |        '.
+        ,::|  \___,-.  c)
+        ;::|     \   '-'
+        ;::|      \
+        ;::|   _.=`\
+        `;:|.=` _.=`\
+        '|_.=`   __\
+        `\_..==`` /
+            .'.___.-'.
+        /          \
+        s ('--......--')
+        /'--......--'\
+        `"--......--"
+
+
+ */
+
+
+    /*
+       let (group_key, p1_sk) = p1_state.finish(&p1.public_key().unwrap()).unwrap();
+        let (_, _) = p2_state.finish(&p2.public_key().unwrap()).unwrap();
+        let (_, p3_sk) = p3_state.finish(&p3.public_key().unwrap()).unwrap();
+        let (_, p4_sk) = p4_state.finish(&p4.public_key().unwrap()).unwrap();
+        let (_, _) = p5_state.finish(&p5.public_key().unwrap()).unwrap();
+
+        let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
+        let message = b"This is a test of the tsunami alert system. This is only a test.";
+        let (p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
+        let (p3_public_comshares, mut p3_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
+        let (p4_public_comshares, mut p4_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 4, 1);
+
+        let mut aggregator = SignatureAggregator::new(params, group_key, context.to_vec(), message.to_vec());
+
+        aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
+        aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
+        aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
+
+        let signers = aggregator.get_signers();
+        let message_hash = compute_message_hash(&context[..], &message[..]);
+
+        let p1_partial = p1_sk.sign(&message_hash, &group_key, &mut p1_secret_comshares, 0, signers).unwrap();
+        let p3_partial = p3_sk.sign(&message_hash, &group_key, &mut p3_secret_comshares, 0, signers).unwrap();
+        let p4_partial = p4_sk.sign(&message_hash, &group_key, &mut p4_secret_comshares, 0, signers).unwrap();
+
+        aggregator.include_partial_signature(p1_partial);
+        aggregator.include_partial_signature(p3_partial);
+        aggregator.include_partial_signature(p4_partial);
+
+        let aggregator = aggregator.finalize().unwrap();
+        let threshold_signature = aggregator.aggregate().unwrap();
+        let verification_result = threshold_signature.verify(&group_key, &message_hash);
+
+        assert!(verification_result.is_ok())
+    
+    
+     
+
+     ! # let (alice_public_comshares, mut alice_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 1, 1);
+//! # let (bob_public_comshares, mut bob_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 2, 1);
+//! # let (carol_public_comshares, mut carol_secret_comshares) = generate_commitment_share_lists(&mut OsRng, 3, 1);
+//! #
+//! # let context = b"CONTEXT STRING STOLEN FROM DALEK TEST SUITE";
+//! # let message = b"This is a test of the tsunami alert system. This is only a test.";
+//! #
+//! # let message_hash = compute_message_hash(&context[..], &message[..]);
+//! #
+//! # let mut aggregator = SignatureAggregator::new(params, bob_group_key.clone(), context.to_vec(), message.to_vec());
+//! #
+//! # aggregator.include_signer(1, alice_public_comshares.commitments[0], (&alice_secret_key).into());
+//! # aggregator.include_signer(3, carol_public_comshares.commitments[0], (&carol_secret_key).into());
+//! #
+//! # let signers = aggregator.get_signers();
+//!
+//! let alice_partial = alice_secret_key.sign(&message_hash, &alice_group_key,
+//!                                           &mut alice_secret_comshares, 0, signers)?;
+//! let carol_partial = carol_secret_key.sign(&message_hash, &carol_group_key,
+//!                                           &mut carol_secret_comshares, 0, signers)?;
+//!
+//! aggregator.include_partial_signature(alice_partial);
+//! aggregator.include_partial_signature(carol_partial);
+//! # Ok(()) }
+//! # #[cfg(feature = "std")]
+//! # fn main() { assert!(do_test().is_ok()); }
+//! # #[cfg(not(feature = "std"))]
+//! # fn main() { }
+//! ```
+//!
+//! ## Signature Aggregation
+//!
+//! Once all the expected signers have sent their partial signatures, the
+//! aggregator attempts to finalize its state, ensuring that there are no errors
+//! thus far in the partial signatures, before finally attempting to complete
+//! the aggregation of the partial signatures into a threshold signature.
+//!
+//! ```rust,ignore
+//! let aggregator = aggregator.finalize()?;
+//! ```
+//!
+//! If the aggregator could not finalize the state, then the `.finalize()` method
+//! will return a `HashMap<u32, &'static str>` describing participant indices and the issues
+//! encountered for them.  These issues are **guaranteed to be the fault of the aggregator**,
+//! e.g. not collecting all the expected partial signatures, accepting two partial
+//! signatures from the same participant, etc.
+//!
+//! And the same for the actual aggregation, if there was an error then a
+//! `HashMap<u32, &'static str>` will be returned which maps participant indices to issues.
+//! Unlike before, however, these issues are guaranteed to be the fault of the
+//! corresponding participant, specifically, that their partial signature was invalid.
+//!
+//! ```rust,ignore
+//! let threshold_signature = aggregator.aggregate()?;
+//! ```
+//!
+//! Anyone with the group public key can then verify the threshold signature
+//! in the same way they would for a standard Schnorr signature.
+//!
+//! ```rust,ignore
+//! let verified = threshold_signature.verify(&alice_group_key, &message_hash)?;
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
