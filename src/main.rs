@@ -10,6 +10,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use frost_secp256k1::DistributedKeyGeneration;
 use frost_secp256k1::GroupKey;
+use frost_secp256k1::IndividualPublicKey;
 use frost_secp256k1::IndividualSecretKey;
 use frost_secp256k1::SignatureAggregator;
 use frost_secp256k1::compute_message_hash;
@@ -372,7 +373,7 @@ fn main() {
                // let xy=PublicCommitmentShareList::from(p1_public_comshares);
                 //println!("{:?}",pubkey.unwrap().commitments[0].0.to_bytes());
 
-                let xyz:PublicCommitmentShareList;
+                //let xyz:PublicCommitmentShareList;
                // xyz.participant_index=1;
                 //let value=AffinePoint::to_bytes(&p1_public_comshares.commitments[0].0);
 
@@ -386,9 +387,19 @@ fn main() {
                 let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
                 let result=secret_file.write_all(&bytesoff);
                 
+                let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
+              //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+                println!("{}",public_keyshare_filepath);
+                let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
+                
+                let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
                 //PublicKey::from_sec1_bytes(bytes)
                 //partyfinale.1.to_public().share.to_bytes()
-
+                let mut partynew=partyfinale;
+                
+                //AffinePoint::from_bytes()
+                //let alpha :IndividualPublicKey=IndividualPublicKey { index: (), share: }
+                //partynew.1.to_public().clone_from(source)
                 let message_hash = compute_message_hash(&context[..], &message[..]);
                 let signers = aggregator.get_signers();
                 println!("{:?}",signers);
