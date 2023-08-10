@@ -347,23 +347,24 @@ fn main() {
                // let signerres=aggregator.get_signers();
                 let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
                          
-                println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes());
-                println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes().len());
+                //println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes());
+                //println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes().len());
                 //let sample=bincode::serialize(&p1_public_comshares.commitments[0]);
                 //let pubkey: Result<PublicCommitmentShareList, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.unwrap());
-                let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].0.to_bytes());
-                println!("{:?}",value.unwrap().to_bytes());
-                let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].1.to_bytes());
-                println!("{:?}",value.unwrap().to_bytes());
+                //let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].0.to_bytes());
+                //println!("{:?}",value.unwrap().to_bytes());
+                //let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].1.to_bytes());
+                //println!("{:?}",value.unwrap().to_bytes());
                 let bytesoff =public_commitment_to_bytes(&p1_public_comshares);
-               println!("{:?}",bytesoff);
-               println!("***********************");
-               println!("***********************");
-               println!("***********************");
-               println!("{:?}",p1_public_comshares);
-               println!("***********************");
-               println!("*****From return function*****");
-               println!("{:?}",public_bytes_to_commitment(bytesoff));
+                
+            //    println!("{:?}",bytesoff);
+            //    println!("***********************");
+            //    println!("***********************");
+            //    println!("***********************");
+            //    println!("{:?}",p1_public_comshares);
+            //    println!("***********************");
+            //    println!("*****From return function*****");
+            //    println!("{:?}",public_bytes_to_commitment(bytesoff));
                //let xya:PublicCommitmentShareList=new PublicCommitmentShareList();
             //    xya.participant_index=1;
             //    xya.commitments[0].0.clone_from(&value.unwrap());
@@ -383,9 +384,10 @@ fn main() {
               //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
                 println!("{}",public_comshare_filepath);
                 let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
-                let result=secret_file.write_all(&fullparty);
+                let result=secret_file.write_all(&bytesoff);
                 
                 //PublicKey::from_sec1_bytes(bytes)
+                //partyfinale.1.to_public().share.to_bytes()
 
                 let message_hash = compute_message_hash(&context[..], &message[..]);
                 let signers = aggregator.get_signers();
