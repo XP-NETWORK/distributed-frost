@@ -1,5 +1,6 @@
 
 use std::io::Read;
+use std::usize;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 #[cfg(not(feature = "std"))]
@@ -462,8 +463,12 @@ fn main() {
                 //aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
                 //aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
                 //aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
-                  let signers = aggregator.get_signers();
+                  let signers: &Vec<frost_secp256k1::signature::Signer> = aggregator.get_signers();
+                  
+                //println!("{:?}",signers);
                 println!("{:?}",signers);
+                println!("{:?}",signer_vector_tobytes(signers, 0));
+
                 
                 //let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
 
@@ -1412,6 +1417,39 @@ fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
 p1_public_comshares
 
 }
+fn signer_vector_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, indexsign: u32)->[u8;140] 
+{
+    // for two signers
+    let mut index=indexsign;
+    let mut returnbytes: [u8;140]=[0;140];
+    let bytes1=signers[index as usize].published_commitment_share.0.to_bytes();
+    let bytes2=signers[index as usize].published_commitment_share.1.to_bytes();
+    returnbytes[0..33].copy_from_slice(&bytes1);
+    returnbytes[33..66].copy_from_slice(&bytes2);
+    returnbytes[66..70].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+
+    //copy second signer in memory 
+    index=index+1;
+    //
+    let bytes1=signers[index as usize].published_commitment_share.0.to_bytes();
+    let bytes2=signers[index as usize].published_commitment_share.1.to_bytes();
+    returnbytes[70..103].copy_from_slice(&bytes1);
+    returnbytes[103..136].copy_from_slice(&bytes2);
+    returnbytes[136..140].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+
+
+
+    // returnbytes[0..33].copy_from_slice(&publiccomitmentsharelist.commitments[0].0.to_bytes());
+    // returnbytes[33..66].copy_from_slice(&publiccomitmentsharelist.commitments[0].1.to_bytes());
+    // returnbytes[66..70].copy_from_slice(&publiccomitmentsharelist.participant_index.to_be_bytes());
+    
+    returnbytes    
+    //let firstbytes=public_commitment_to_bytes(&signers[0].published_commitment_share);
+    
+    
+
+}
+
 // fn public_bytes_to_commitment2(returnbytes:[u8;70] )->PublicCommitShareListformain
 // {
     
