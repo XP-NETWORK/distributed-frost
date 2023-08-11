@@ -28,10 +28,13 @@ use frost_secp256k1::Parameters;
 use k256::Scalar;
 use k256::Secp256k1;
 use k256::SecretKey;
+//use k256::elliptic_curve::PublicKey;
+//use k256::elliptic_curve::PublicKey;
 use k256::elliptic_curve::ScalarArithmetic;
 use k256::elliptic_curve::group::GroupEncoding;
 use rand::rngs::OsRng;
 use rand::seq::index;
+use sec1::point;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -334,6 +337,7 @@ fn main() {
             println!("{:?}",partyfinale.1.key.to_bytes());
             println!("Public key bytes ");
             println!("{:?}",partyfinale.1.to_public().share.to_bytes());
+            let custom=partyfinale.1.to_public();
 
             // Move to Partial Signature Creation 
             // Assign Party 1 as leader 
@@ -346,8 +350,9 @@ fn main() {
                 // do some special work if id ==1 
                 let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                // let signerres=aggregator.get_signers();
+               println!("Inside agregator loop ");       
                 let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
-                         
+                
                 //println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes());
                 //println!("{:?}",p1_public_comshares.commitments[0].0.to_bytes().len());
                 //let sample=bincode::serialize(&p1_public_comshares.commitments[0]);
@@ -356,7 +361,9 @@ fn main() {
                 //println!("{:?}",value.unwrap().to_bytes());
                 //let value=AffinePoint::from_bytes(&p1_public_comshares.commitments[0].1.to_bytes());
                 //println!("{:?}",value.unwrap().to_bytes());
-                let bytesoff =public_commitment_to_bytes(&p1_public_comshares);
+                println!("Bytes commitments ");      
+                let bytesoff: [u8; 70] =public_commitment_to_bytes(&p1_public_comshares);
+
                 
             //    println!("{:?}",bytesoff);
             //    println!("***********************");
@@ -401,7 +408,61 @@ fn main() {
                 //let alpha :IndividualPublicKey=IndividualPublicKey { index: (), share: }
                 //partynew.1.to_public().clone_from(source)
                 let message_hash = compute_message_hash(&context[..], &message[..]);
-                let signers = aggregator.get_signers();
+              //  let signers = aggregator.get_signers();
+                
+                // loop through all other files for commitment and public key 
+                let mut count=2;
+                while count <4
+                {
+                    let mut public_comshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_comshares" + count.to_string().trim()+ ".txt";
+                    let mut bytespublicexact: [u8; 70]=[0;70];
+                    let mut file_pub = match File::open(&public_comshare_filepath) {
+                        Ok(file_pub) => file_pub,
+                        Err(_) => panic!("no such file"),
+                       };
+                     file_pub.read_exact(&mut bytespublicexact);
+                               
+                    let comms=public_bytes_to_commitment(bytespublicexact);
+                    //let commbnew:PublicCommitmentShareList=PublicCommitmentShareList { participant_index: comms.participant_index, commitments: comms.commitments };
+
+                    // get commitment share list from bytes
+
+                    let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_final_key" + count.to_string().trim()+ ".txt";
+                    let mut bytespublickey: [u8; 33]=[0;33];
+                    let mut file_pubkey = match File::open(&public_keyshare_filepath) {
+                        Ok(file_pubkey) => file_pubkey,
+                        Err(_) => panic!("no such file"),
+                       };
+                     file_pubkey.read_exact(&mut bytespublickey);
+
+                       println!("{:?}",bytespublickey);
+                     let mut genarraypublic=GenericArray::from_slice(&bytespublickey);
+                     println!("{:?}",genarraypublic);
+
+                     let pk_sk_affinepoint=AffinePoint::from_bytes(genarraypublic);
+                     let pk_sk_affinepoint=pk_sk_affinepoint.unwrap();
+                     partynew.1.to_public().share.clone_from(&pk_sk_affinepoint);
+
+                      let publickey_party_count=PublicKey::from_affine(pk_sk_affinepoint).unwrap();
+                    
+                    let alpha : IndividualPublicKey=IndividualPublicKey { index: count, share: pk_sk_affinepoint };
+                    let xyz=PublicKey::from_affine(pk_sk_affinepoint);
+                    let xyz= xyz.unwrap();
+
+                aggregator.include_signer(count, comms.commitments[0],alpha);     
+                
+                   
+                    //let publickey_party_count=IndividualPublicKey::clone_from(&mut self, source)
+                     
+                     count=count+1;
+
+                }
+
+
+                //aggregator.include_signer(1, p1_public_comshares.commitments[0], (&p1_sk).into());
+                //aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
+                //aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
+                  let signers = aggregator.get_signers();
                 println!("{:?}",signers);
                 
                 //let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
@@ -410,11 +471,25 @@ fn main() {
                 //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
             }
             else {
+                let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                 let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                 // write commitment share and public key in files
 
                 let message_hash = compute_message_hash(&context[..], &message[..]);
              //   let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
+                 let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
+             //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+               println!("{}",public_comshare_filepath);
+               let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
+               let bytesoff: [u8; 70] =public_commitment_to_bytes(&p1_public_comshares);
+               let result=secret_file.write_all(&bytesoff);
+               
+               let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
+             //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+               println!("{}",public_keyshare_filepath);
+               let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
+               
+               let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
 
                 
             }
@@ -435,9 +510,9 @@ fn main() {
             aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
             aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
     
-            let signers = aggregator.get_signers();
+            
             let message_hash = compute_message_hash(&context[..], &message[..]);
-    
+            let signers = aggregator.get_signers();
             let p1_partial = p1_sk.sign(&message_hash, &group_key, &mut p1_secret_comshares, 0, signers).unwrap();
             let p3_partial = p3_sk.sign(&message_hash, &group_key, &mut p3_secret_comshares, 0, signers).unwrap();
             let p4_partial = p4_sk.sign(&message_hash, &group_key, &mut p4_secret_comshares, 0, signers).unwrap();
@@ -1252,12 +1327,20 @@ fn convert_bytes_to_3secret(secretbytes:[u8;88] )->Vec<SecretShare>
 
 }
 
-pub struct PublicCommitShareList {
+pub struct PublicCommitShareListformain {
     /// The participant's index.
     pub participant_index: u32,
     /// The published commitments.
     pub commitments: Vec<(AffinePoint, AffinePoint)>,
 }
+
+// impl PublicCommitShareListformain {
+//     fn new() -> Self {
+//         {
+
+//         }
+//     }
+// }
 
 fn public_commitment_to_bytes(publiccomitmentsharelist:&PublicCommitmentShareList )->[u8;70] 
 {
@@ -1279,8 +1362,10 @@ fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
     indexbytes.copy_from_slice(&returnbytes[66..70]);
     let indexcommit:u32=u32::from_be_bytes(indexbytes);
     
-     let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
+    // let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
     
+    
+
     
      let mut affinebytes:[u8;33]=[0;33];
      affinebytes.copy_from_slice(&returnbytes[0..33]);
@@ -1290,8 +1375,29 @@ fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
      affinebytes.copy_from_slice(&returnbytes[33..66]);
      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
-     p1_public_comshares.commitments[0].0.clone_from(&affine1);
-     p1_public_comshares.commitments[0].1.clone_from(&affine2);
+     //let mut p1_public_comshares:PublicCommitShareList=PublicCommitmentShareList
+
+     let mut tuple: (AffinePoint, AffinePoint)=(affine1,affine2);
+     tuple.0.clone_from(&affine1);
+     tuple.1.clone_from(&affine2);
+
+     let mut vec_of_tuples = Vec::new();
+     vec_of_tuples.push(tuple);
+
+
+     //let mut points: Vec<AffinePoint> = Vec::new();
+     
+     
+     //points.push(affine1);
+     //points.push(affine2);
+     
+     //let Commitment :CommitmentShare;
+     
+     let p1_public_comshares=PublicCommitmentShareList { participant_index: indexcommit,commitments:vec_of_tuples  };
+     //p1_public_comshares.commitments[0].0.clone_from(&affine1);
+     //p1_public_comshares.commitments[0].1.clone_from(&affine2);
+
+
     // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
     // p1_public_comshares.commitments[0].0.clone_from(source)
     // p1_public_comshares.commitments[0].1.clone_from(source)
@@ -1306,3 +1412,76 @@ fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
 p1_public_comshares
 
 }
+// fn public_bytes_to_commitment2(returnbytes:[u8;70] )->PublicCommitShareListformain
+// {
+    
+//     //let mut bytesvalue: [u8;70]=[0;70];
+//     let mut indexbytes:[u8;4]=[0;4];
+//     indexbytes.copy_from_slice(&returnbytes[66..70]);
+//     let indexcommit:u32=u32::from_be_bytes(indexbytes);
+//     let mut p1_public_comshares:PublicCommitShareListformain;
+//     // let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
+//     /*
+    
+    
+
+    
+//      let mut affinebytes:[u8;33]=[0;33];
+//      affinebytes.copy_from_slice(&returnbytes[0..33]);
+//      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
+//      let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     
+//      affinebytes.copy_from_slice(&returnbytes[33..66]);
+//      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
+//      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+//      p1_public_comshares.commitments[0].0.clone_from(&affine1);
+//      p1_public_comshares.commitments[0].1.clone_from(&affine2);
+//     // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
+//     // p1_public_comshares.commitments[0].0.clone_from(source)
+//     // p1_public_comshares.commitments[0].1.clone_from(source)
+//    // bytesvalue.clone_from_slice(&returnbytes[0..33]);
+
+//     //let mut returncommit: PublicCommitmentShareList=
+//     //returncommit.participant_index=1;
+//     //let mut genarray=GenericArray::from_slice(bytesvalue.as_ref());
+//    // let mut returncommit: PublicCommitmentShareList=PublicCommitShareList::into(self)
+//     //let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
+//     //let affine1=AffinePoint::from_bytes(&returnbytes[0..33]).unwrap();
+//      */
+// p1_public_comshares
+
+//}
+
+// impl Handler {
+//     pub async fn new(config: config::ChainConfig) -> Self {
+//         let provider = Provider::try_from(config.node).unwrap_or_else(|e| {
+//             panic!(
+//                 "Error getting ethers provider {e:#?} with node {:#?}",
+//                 config.node
+//             )
+//         });
+
+//         let wallet = Wallet::from_str(config.private_key)
+//             .unwrap_or_else(|e| panic!("Error setting wallet {e:#?} using private key"));
+
+//             let wallet = wallet.with_chain_id(config.chain_nonce);
+
+//         let address: EthersH160 = config.minter.parse().unwrap_or_else(|e| {
+//             panic!(
+//                 "Error parsing minter address with value {:#?} with error {:#?}",
+//                 config.minter, e
+//             )
+//         });
+
+//         let signer = SignerMiddleware::new(provider.clone(), wallet);
+//         let minter = MinterContract::new(address, signer.clone().into());
+
+//         Handler {
+//             config,
+//             signer,
+//             minter,
+//             provider,
+//             log_hashes: Arc::new(RwLock::new(HashMap::new())),
+//         }
+//     }
+// }
