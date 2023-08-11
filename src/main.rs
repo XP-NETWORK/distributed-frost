@@ -20,6 +20,7 @@ use frost_secp256k1::keygen::SecretShare;
 use frost_secp256k1::precomputation::CommitmentShare;
 use frost_secp256k1::precomputation::PublicCommitmentShareList;
 use frost_secp256k1::signature::Aggregator;
+use frost_secp256k1::signature::Signer;
 use k256::AffinePoint;
 use k256::PublicKey;
 use frost_secp256k1;
@@ -43,7 +44,7 @@ use std::io::Write;
 use serde;
 use std::convert::TryInto;
 use k256::ecdsa::Signature;
-use k256::ecdsa::signature::Signer;
+//use k256::ecdsa::signature::Signer;
 use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
@@ -467,7 +468,9 @@ fn main() {
                   
                 //println!("{:?}",signers);
                 println!("{:?}",signers);
-                println!("{:?}",signer_vector_tobytes(signers, 0));
+                let bytessamoke=signer_vector_tobytes(signers, 0);
+                println!("{:?}",bytessamoke);
+                println!("{:?}",signer_bytes_tovector(bytessamoke));
 
                 
                 //let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
@@ -1446,6 +1449,66 @@ fn signer_vector_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, inde
     returnbytes    
     //let firstbytes=public_commitment_to_bytes(&signers[0].published_commitment_share);
     
+    
+
+}
+fn signer_bytes_tovector( signerbytes:[u8;140] )-> Vec<frost_secp256k1::signature::Signer>
+{
+    // for two signers
+    let mut signervector :Vec<frost_secp256k1::signature::Signer>=vec![];
+    let mut indexbytes:[u8;4]=[0;4];
+    indexbytes.copy_from_slice(&signerbytes[66..70]);
+    let indexcommit:u32=u32::from_be_bytes(indexbytes);
+
+    
+    //signervector[0].participant_index=indexcommit;
+    //signervector[0].published_commitment_share
+
+    let mut affinebytes:[u8;33]=[0;33];
+     affinebytes.copy_from_slice(&signerbytes[0..33]);
+     let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     
+     affinebytes.copy_from_slice(&signerbytes[33..66]);
+     let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     // copy affines converted from memory bytes to back 
+     //signervector[0].published_commitment_share.0.clone_from(&affine1);
+     //signervector[0].published_commitment_share.1.clone_from(&affine2);
+     let mut signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
+    //signer1.participant_index=indexcommit;
+    //signer1.published_commitment_share.0.clone_from(&affine1);
+    //signer1.published_commitment_share.0.clone_from(&affine2);
+    signervector.push(signer1);
+
+// Convert back second signers 
+
+    indexbytes.copy_from_slice(&signerbytes[136..140]);
+    let indexcommit:u32=u32::from_be_bytes(indexbytes);
+
+    
+    //signervector[1].participant_index=indexcommit;
+    //signervector[0].published_commitment_share
+
+    let mut affinebytes:[u8;33]=[0;33];
+     affinebytes.copy_from_slice(&signerbytes[70..103]);
+     let genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     
+     affinebytes.copy_from_slice(&signerbytes[103..136]);
+     let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     // copy affines converted from memory bytes to back 
+     //signervector[1].published_commitment_share.0.clone_from(&affine1);
+     //signervector[1].published_commitment_share.1.clone_from(&affine2);
+
+     let mut signer2:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
+    // signer2.participant_index=indexcommit;
+    // signer2.published_commitment_share.0.clone_from(&affine1);
+    // signer2.published_commitment_share.0.clone_from(&affine2);
+    signervector.push(signer2);
+    return signervector;
+
     
 
 }
