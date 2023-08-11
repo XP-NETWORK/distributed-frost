@@ -478,10 +478,48 @@ fn main() {
                   let mut signer_file_writer = File::create(&signer_140_file).expect("creation failed");
                     signer_file_writer.write_all(&bytessamoke);
                     println!("signer bytes written ");
-                    println!( "go ahead on signers for writing Partial signatures ");
+                    println!( "go ahead on signers for writing Partial signatures aggreagotr party ");
                              std::io::stdin().read_line(&mut name);
-                
-                
+
+                             let mut partial1: [u8; 44]=[0;44];
+                                let mut count=2;      
+                             let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
+                             
+                    let mut tss_signer = match File::open(&public_tss) {
+                        Ok(tss_signer) => tss_signer,
+                        Err(_) => panic!("no such file"),
+                       };
+                       tss_signer.read_exact(&mut partial1);
+                       let partial_sign1=partialsig_from_bytes(partial1);
+
+                       // get Tss 3
+                       count=3;
+                       let mut partial2: [u8; 44]=[0;44];
+                       let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
+                       
+                             
+                       let mut tss_signer = match File::open(&public_tss) {
+                           Ok(tss_signer) => tss_signer,
+                           Err(_) => panic!("no such file"),
+                          };
+                          tss_signer.read_exact(&mut partial2);
+                          let partial_sign2=partialsig_from_bytes(partial2);
+                        
+                        // tss to agregator 
+                        println!("at aggregator function wih TSS");
+                          aggregator.include_partial_signature(partial_sign1);
+                          aggregator.include_partial_signature(partial_sign2);
+
+
+                          let aggregator = aggregator.finalize().unwrap();
+            let threshold_signature = aggregator.aggregate().unwrap();
+            let verification_result = threshold_signature.verify(&partynew.0, &message_hash);
+            if verification_result.is_ok()
+            {
+                println!("TSS signature verified for message hash {:?}",message_hash);
+            }
+    
+
 
                 
                 //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
@@ -522,10 +560,19 @@ fn main() {
                        let signer_140_from_file=signer_bytes_tovector(signer_140_bytes);
                let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signer_140_from_file).unwrap();
                        println!("{:?}", party_partial);
-                       let output=partialsig_to_bytes(party_partial);
-                       println!("{:?}",output);
+                       let output: [u8; 44]=partialsig_to_bytes(party_partial);
                        let newtss=partialsig_from_bytes(output);
-                       println!("{:?}", newtss);
+                       println!("writign partial signature to file ",);
+
+                       let mut public_tss = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/tss" + id.to_string().trim()+ ".txt";
+                       //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+                         println!("{}",public_tss);
+                         let mut tss_file = File::create(&public_tss).expect("creation failed");
+                         let result=tss_file.write_all(&output);
+
+                       std::io::stdin().read_line(&mut name);
+                       //let newtss=partialsig_from_bytes(output);
+                       //println!("{:?}", newtss);
                        
                        
                 
@@ -1562,10 +1609,13 @@ fn partialsig_from_bytes(bytes:[u8;44])->PartialThresholdSignature{
     
     let indexvalue=u32::from_be_bytes(indexbytes);
     let mut scalerbytes:[u8;40]=[0;40];
+    
     scalerbytes.copy_from_slice(&bytes[0..40]);
     let zscaler: Result<Scalar, Box<bincode::ErrorKind>>=bincode::deserialize(scalerbytes.as_ref());
-
-    let returntss:PartialThresholdSignature=PartialThresholdSignature { index:indexvalue, z: zscaler.unwrap() };
+    println!("{:?}",&zscaler.unwrap());
+    let mut zscaler: Result<Scalar, Box<bincode::ErrorKind>>=bincode::deserialize(scalerbytes.as_ref());
+    let zscaler2=zscaler.unwrap();
+    let returntss:PartialThresholdSignature=PartialThresholdSignature { index:indexvalue, z: zscaler2 };
     
 returntss
     
