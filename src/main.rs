@@ -20,6 +20,7 @@ use frost_secp256k1::keygen::SecretShare;
 use frost_secp256k1::precomputation::CommitmentShare;
 use frost_secp256k1::precomputation::PublicCommitmentShareList;
 use frost_secp256k1::signature::Aggregator;
+use frost_secp256k1::signature::PartialThresholdSignature;
 use frost_secp256k1::signature::Signer;
 use k256::AffinePoint;
 use k256::PublicKey;
@@ -521,6 +522,12 @@ fn main() {
                        let signer_140_from_file=signer_bytes_tovector(signer_140_bytes);
                let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signer_140_from_file).unwrap();
                        println!("{:?}", party_partial);
+                       let output=partialsig_to_bytes(party_partial);
+                       println!("{:?}",output);
+                       let newtss=partialsig_from_bytes(output);
+                       println!("{:?}", newtss);
+                       
+                       
                 
             }
              /* 
@@ -1535,6 +1542,35 @@ fn signer_bytes_tovector( signerbytes:[u8;140] )-> Vec<frost_secp256k1::signatur
 
 }
 
+fn partialsig_to_bytes(signtss:PartialThresholdSignature)->[u8;44]{
+    let mut indexbytes:[u8;4]=signtss.index.to_be_bytes();
+    let mut resultbytes: [u8;44]=[0;44];
+    let bytesz=bincode::serialize(&signtss.z).unwrap();
+    println!("{:?}",bytesz.len());
+    let split=bytesz.split_at(40);
+        resultbytes[0..40].clone_from_slice(&split.0);
+        resultbytes[40..44].clone_from_slice(indexbytes.as_slice());
+
+        resultbytes
+    
+
+}
+fn partialsig_from_bytes(bytes:[u8;44])->PartialThresholdSignature{
+   
+    let mut indexbytes:[u8;4]=[0;4];
+    indexbytes.copy_from_slice(&bytes[40..44]);
+    
+    let indexvalue=u32::from_be_bytes(indexbytes);
+    let mut scalerbytes:[u8;40]=[0;40];
+    scalerbytes.copy_from_slice(&bytes[0..40]);
+    let zscaler: Result<Scalar, Box<bincode::ErrorKind>>=bincode::deserialize(scalerbytes.as_ref());
+
+    let returntss:PartialThresholdSignature=PartialThresholdSignature { index:indexvalue, z: zscaler.unwrap() };
+    
+returntss
+    
+
+}
 // fn public_bytes_to_commitment2(returnbytes:[u8;70] )->PublicCommitShareListformain
 // {
     
