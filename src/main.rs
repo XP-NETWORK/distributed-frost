@@ -471,16 +471,23 @@ fn main() {
                 let bytessamoke=signer_vector_tobytes(signers, 0);
                 println!("{:?}",bytessamoke);
                 println!("{:?}",signer_bytes_tovector(bytessamoke));
-
+                let mut signer_140_file = String::from("/opt/datafrost/")+ "signer_vector_140" + ".txt";
+                //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+                  //println!("{}",public_keyshare_filepath);
+                  let mut signer_file_writer = File::create(&signer_140_file).expect("creation failed");
+                    signer_file_writer.write_all(&bytessamoke);
+                    println!("signer bytes written ");
+                    println!( "go ahead on signers for writing Partial signatures ");
+                             std::io::stdin().read_line(&mut name);
                 
-                //let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signers).unwrap();
+                
 
                 
                 //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
             }
             else {
                 let (mut p1_public_comshares, mut p1_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
-                let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+                //let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                 // write commitment share and public key in files
 
                 let message_hash = compute_message_hash(&context[..], &message[..]);
@@ -498,7 +505,22 @@ fn main() {
                let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
                
                let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
+               
+               println!( "go ahead on signers for writing Partial signatures ");
+                        std::io::stdin().read_line(&mut name);
 
+               //read signers vector from file 
+               let mut signer_140_file = String::from("/opt/datafrost/")+ "signer_vector_140" + ".txt";
+               let mut signer_140_bytes: [u8; 140]=[0;140];
+                    let mut file_signer = match File::open(&signer_140_file) {
+                        Ok(file_signer) => file_signer,
+                        Err(_) => panic!("no such file"),
+                       };
+                       file_signer.read_exact(&mut signer_140_bytes);
+
+                       let signer_140_from_file=signer_bytes_tovector(signer_140_bytes);
+               let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut p1_secret_comshares,0,&signer_140_from_file).unwrap();
+                       println!("{:?}", party_partial);
                 
             }
              /* 
