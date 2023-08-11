@@ -507,19 +507,26 @@ fn main() {
                         
                         // tss to agregator 
                         println!("at aggregator function wih TSS");
+                          println!("{:?}",aggregator.get_signers());
                           aggregator.include_partial_signature(partial_sign1);
                           aggregator.include_partial_signature(partial_sign2);
 
 
-                          let aggregator = aggregator.finalize().unwrap();
-            let threshold_signature = aggregator.aggregate().unwrap();
+                          let aggregator2 = aggregator.finalize().unwrap();
+                          println!("at aggregator function wih TSS unwrap");
+
+            let threshold_signature = aggregator2.aggregate().unwrap();
+            println!("at threshold.  wih TSS unwrap");
             let verification_result = threshold_signature.verify(&partynew.0, &message_hash);
+            println!("at verification.  wih TSS unwrap");
             if verification_result.is_ok()
             {
                 println!("TSS signature verified for message hash {:?}",message_hash);
             }
-    
-
+/* */    
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
 
                 
                 //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
@@ -582,7 +589,7 @@ fn main() {
             
                 
                 
-                aggregator.include_signer(1,p1_public_comshares.commitments[0],partyfinale.1.to_public());
+                aggregator.include_signer(1,p1_public_comshares.ments[0],partyfinale.1.to_public());
             
                 let messagehash=compute_message_hash(context, message);
     
