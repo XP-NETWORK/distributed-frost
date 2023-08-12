@@ -407,6 +407,7 @@ fn main() {
                 
                 let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
                 println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
+                std::io::stdin().read_line(&mut name);
                 //PublicKey::from_sec1_bytes(bytes)
                 //partyfinale.1.to_public().share.to_bytes()
                 let  final_GroupKey: GroupKey= partyfinale.0;
@@ -534,6 +535,7 @@ fn main() {
                         // tss to agregator 
                         println!( " Theshold Signature Step-10: Aggregating signers");
                         println!("at aggregator function wih TSS");
+                        std::io::stdin().read_line(&mut name);
                           println!("{:?}",aggregator.get_signers());
                           aggregator.include_partial_signature(partial_sign1);
                           aggregator.include_partial_signature(partial_sign2);
