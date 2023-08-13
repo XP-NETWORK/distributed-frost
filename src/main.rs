@@ -1036,7 +1036,7 @@ fn main() {
                       {
                         let mut partial1: [u8; 44]=[0;44];
                          let mut count=2;      
-                      let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
+                      let mut public_tss = String::from("/opt/datafrost/")+ counttss.to_string().trim()  + "/tss" + counttss.to_string().trim()+ ".txt";
                       
                          let mut tss_signer = match File::open(&public_tss) {
                              Ok(tss_signer) => tss_signer,
@@ -1834,36 +1834,3 @@ fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::sig
 
 //}
 
-// impl Handler {
-//     pub async fn new(config: config::ChainConfig) -> Self {
-//         let provider = Provider::try_from(config.node).unwrap_or_else(|e| {
-//             panic!(
-//                 "Error getting ethers provider {e:#?} with node {:#?}",
-//                 config.node
-//             )
-//         });
-
-//         let wallet = Wallet::from_str(config.private_key)
-//             .unwrap_or_else(|e| panic!("Error setting wallet {e:#?} using private key"));
-
-//             let wallet = wallet.with_chain_id(config.chain_nonce);
-
-//         let address: EthersH160 = config.minter.parse().unwrap_or_else(|e| {
-//             panic!(
-//                 "Error parsing minter address with value {:#?} with error {:#?}",
-//                 config.minter, e
-//             )
-//         });
-
-//         let signer = SignerMiddleware::new(provider.clone(), wallet);
-//         let minter = MinterContract::new(address, signer.clone().into());
-
-//         Handler {
-//             config,
-//             signer,
-//             minter,
-//             provider,
-//             log_hashes: Arc::new(RwLock::new(HashMap::new())),
-//         }
-//     }
-// }
