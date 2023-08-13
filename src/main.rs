@@ -588,7 +588,7 @@ fn main() {
             // }
             }
             else {
-                
+                // for 2/3 other parties
                 let (mut other_Party_commshare, mut other_party_secret_comm_share) = generate_commitment_share_lists(&mut OsRng, id, 1);
                 //let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
                 // write commitment share and public key in files
@@ -682,6 +682,7 @@ fn main() {
     // Create all files for computation if filler = ture
         let mut filler =false;
         let mut file_nos=1;
+        // testing filling files with comm share
        while file_nos<12 && filler== true
        {
            if file_nos==id
@@ -781,7 +782,7 @@ fn main() {
        // Go For DKG Part-1
 
         //DKG first Part  Round One 
-        // with mulit parties
+        // with multi parties
         
         
         let mut partystate=DistributedKeyGeneration::<_>::new(&params,&id,&_partycoeffs,&mut other_Party_vectors).or(Err(())).unwrap();
@@ -804,10 +805,6 @@ fn main() {
                 `\\-..-//'
             ZKP    `\\//'
                     ""
-
-
-
-
             */
                     
         //Write own Share to file 
@@ -815,7 +812,7 @@ fn main() {
         let fullparty=convert_secret_to_bytes(partyone_secrets);
 
          let mut secret_share_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/party_secrets" + id.to_string().trim()+ ".txt";
-         //fs::remove_file(&secret_share_filepath).expect("could not remove file");
+         //1fs::remove_file(&secret_share_filepath).expect("could not remove file");
          let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
          let result=secret_file.write_all(&fullparty);
          println!("Checking all files are written with party scecrets");
@@ -900,13 +897,8 @@ fn main() {
     
     // need for signing 
 /*
-            ,....,
-            ,::::::<
-        ,::/^\"``.
-        ,::/, `   e`.
-        ,::; |        '.
-        ,::|  \___,-.  c)
-        ;::|     \   '-'
+    Create steps for signing . party 1 will act as signing validator
+    
             
  */
   
