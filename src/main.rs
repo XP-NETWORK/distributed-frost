@@ -1031,55 +1031,35 @@ fn main() {
              println!( "Waiting for all other parties to write TSS ");
              println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
                       std::io::stdin().read_line(&mut name);
-
-                      let mut partial1: [u8; 44]=[0;44];
+                    let mut counttss=2;
+                      while counttss <12
+                      {
+                        let mut partial1: [u8; 44]=[0;44];
                          let mut count=2;      
                       let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
                       
-             let mut tss_signer = match File::open(&public_tss) {
-                 Ok(tss_signer) => tss_signer,
-                 Err(_) => panic!("no such file"),
-                };
-                tss_signer.read_exact(&mut partial1);
+                         let mut tss_signer = match File::open(&public_tss) {
+                             Ok(tss_signer) => tss_signer,
+                             Err(_) => panic!("no such file"),
+                                 };
+                            tss_signer.read_exact(&mut partial1);
 
-                println!( " Theshold Signature Step-9.1: read Partial sig from file for 1st signer and converted backfrom bytes");
-                // create partial sign
-                let partial_sign1=partialsig_from_bytes(partial1);// create partial sign
-                println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
-                // get Tss 3
-                count=3;
-                let mut partial2: [u8; 44]=[0;44];
-                let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
-                
-                      
-                let mut tss_signer = match File::open(&public_tss) {
-                    Ok(tss_signer) => tss_signer,
-                    Err(_) => panic!("no such file"),
-                   };
-                   tss_signer.read_exact(&mut partial2);
-                   
-                   
-                   println!( " Theshold Signature Step-9.2: read Partial sig from file for 1st signer and converted backfrom bytes");
-                
-                // create partial sign
-                   let partial_sign2=partialsig_from_bytes(partial2);
-                   println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
-                   
-                   
-                 
-                 // tss to agregator 
-                 println!( " Theshold Signature Step-10: Aggregating signers");
-                 println!("at aggregator function wih TSS");
-                 std::io::stdin().read_line(&mut name);
-                   println!("{:?}",aggregator.get_signers());
-                   aggregator.include_partial_signature(partial_sign1);
-                   aggregator.include_partial_signature(partial_sign2);
+                          println!( " Theshold Signature Step-9.1: read Partial sig from file for {} signer and converted backfrom bytes",counttss+1);
+                             // create partial sign
+                             let partial_sign1=partialsig_from_bytes(partial1);// create partial sign
+                             println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
+                                  aggregator.include_partial_signature(partial_sign1);
 
+                             counttss=counttss+1;   
+                         }
+
+                
+                              
 
                    let aggregator_finalized = aggregator.finalize().unwrap();
                    println!("at aggregator function wih TSS unwrap");
                    println!( " Theshold Signature Step-11: Aggregating Finalizing");
-     let  threshold_signature_final: Result<frost_secp256k1::ThresholdSignature, std::collections::HashMap<u32, &str>>  = aggregator_finalized.aggregate();
+            let  threshold_signature_final: Result<frost_secp256k1::ThresholdSignature, std::collections::HashMap<u32, &str>>  = aggregator_finalized.aggregate();
 
      println!("");
      println!("Theshold Signature Step 12 .  wih TSS unwrap");
@@ -1100,7 +1080,7 @@ fn main() {
      if verification_result.is_ok()
      {
          //println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
-         println!("TSS signature verified for message hash {:?}",message_hash);
+         println!("TSS signature verified for message hash {:?}",message_hash );
      }
 /* */    
 //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
