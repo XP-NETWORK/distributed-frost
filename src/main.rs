@@ -898,15 +898,295 @@ fn main() {
     // need for signing 
 /*
     Create steps for signing . party 1 will act as signing validator
-    
+                ================================================.
+                    .-.   .-.     .--.                          |
+                    | OO| | OO|   / _.-' .-.   .-.  .-.   .''.  |
+                    |   | |   |   \  '-. '-'   '-'  '-'   '..'  |
+                    '^^^' '^^^'    '--'                         |
+                ===============.  .-.  .================.  .-.  |
+                               | |   | |                |  '-'  |
+                               | |   | |                |       |
+                               | ':-:' |                |  .-.  |
+                Sleepy         |  '-'  |                |  '-'  |
+                ==============='       '================'       |
+
+
             
  */
   
         let context = b"CONTEXT STRING FOR XP NFT BRIDGE TEST FOR APPLE>D>HAIDER>SMITH";
 
         let message = b"This is a test message from Xp Bridge piece Meal 20230815";
+        
+        //Create 
+        if id==1
+        {
+
+        
+
+        let (mut agg_Party_commshare, mut agg_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+        // let signerres=aggregator.get_signers();
+        println!("Inside agregator loop  ");       
+        println!("Theshold Signature Step-1 : Creating Signature Aggregator with context, message, params and group key ");
+         let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
+                     
+         let bytesoff: [u8; 70] =public_commitment_to_bytes(&agg_Party_commshare);
+
+         // write commitment share and public key in files
+         let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
+       //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+         println!("{}",public_comshare_filepath);
+         let mut public_comm_share_file = File::create(&public_comshare_filepath).expect("creation failed");
+         let result=public_comm_share_file.write_all(&bytesoff);
+         
+         let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
+       //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+         println!("{}",public_keyshare_filepath);
+         let mut public_key_final_file = File::create(&public_keyshare_filepath).expect("creation failed");
+         
+         let result=public_key_final_file.write_all(&partyfinale.1.to_public().share.to_bytes());
+         println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
+         std::io::stdin().read_line(&mut name);
+         //PublicKey::from_sec1_bytes(bytes)
+         //partyfinale.1.to_public().share.to_bytes()
+         let  final_GroupKey: GroupKey= partyfinale.0;
+         let  partynew=partyfinale;
+    
+         let message_hash = compute_message_hash(&context[..], &message[..]);
+       //  let signers = aggregator.get_signers();
+         
+         // loop through all other files for commitment and public key 
+         let mut count=2;
+         while count <12
+         {
+             let mut public_comshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_comshares" + count.to_string().trim()+ ".txt";
+             let mut bytespublicexact: [u8; 70]=[0;70];
+             let mut file_pub = match File::open(&public_comshare_filepath) {
+                 Ok(file_pub) => file_pub,
+                 Err(_) => panic!("no such file"),
+                };
+              file_pub.read_exact(&mut bytespublicexact);
+              println!("Theshold Signature Step-5 : Reading Public Comm share to create Signer Vector  ");
+              println!("Reading Public Comm share for Party id {}",count);
+                        
+             let comms=public_bytes_to_commitment(bytespublicexact);
+            
+
+             // get commitment share list from bytes
+
+             let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_final_key" + count.to_string().trim()+ ".txt";
+             let mut bytespublickey: [u8; 33]=[0;33];
+             let mut file_pubkey = match File::open(&public_keyshare_filepath) {
+                 Ok(file_pubkey) => file_pubkey,
+                 Err(_) => panic!("no such file"),
+                };
+              file_pubkey.read_exact(&mut bytespublickey);
+
+                println!("{:?}",bytespublickey);
+              let mut genarraypublic=GenericArray::from_slice(&bytespublickey);
+              println!("{:?}",genarraypublic);
+
+              let pk_sk_affinepoint=AffinePoint::from_bytes(genarraypublic);
+              let pk_sk_affinepoint=pk_sk_affinepoint.unwrap();
+              partynew.1.to_public().share.clone_from(&pk_sk_affinepoint);
+
+               let publickey_party_count=PublicKey::from_affine(pk_sk_affinepoint).unwrap();
+             
+             let alpha : IndividualPublicKey=IndividualPublicKey { index: count, share: pk_sk_affinepoint };
+             let xyz=PublicKey::from_affine(pk_sk_affinepoint);
+             let xyz= xyz.unwrap();
+
+         aggregator.include_signer(count, comms.commitments[0],alpha);     
+         
+            
+             //let publickey_party_count=IndividualPublicKey::clone_from(&mut self, source)
+              
+              count=count+1;
+
+         }
+
+
+       
+         //aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
+         //aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
+           let signers: &Vec<frost_secp256k1::signature::Signer> = aggregator.get_signers();
+           
+         //println!("{:?}",signers);
+         println!("{:?}",signers);
+         println!("{:?}",signers.capacity());
+         println!("Stop here for the signer vector ");
+         std::io::stdin().read_line(&mut name);
+         let indexsign=0;
+
+         let bytessamoke =signer_vector_ten_tobytes(signers, indexsign);
+         println!("{:?}",bytessamoke);
+         println!("{:?}",signer_bytes_to_ten_vector((bytessamoke)));
+         let mut signer_700_file = String::from("/opt/datafrost/")+ "signer_vector_700" + ".txt";
+         //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+           //println!("{}",public_keyshare_filepath);
+           let mut signer_file_writer = File::create(&signer_700_file).expect("creation failed");
+             signer_file_writer.write_all(&bytessamoke);
+             println!("signer bytes written ");
+             println!( "go ahead on signers for writing Partial signatures aggreagotr party ");
+             println!( "Waiting for all other parties to write TSS ");
+             println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
+                      std::io::stdin().read_line(&mut name);
+
+                      let mut partial1: [u8; 44]=[0;44];
+                         let mut count=2;      
+                      let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
+                      
+             let mut tss_signer = match File::open(&public_tss) {
+                 Ok(tss_signer) => tss_signer,
+                 Err(_) => panic!("no such file"),
+                };
+                tss_signer.read_exact(&mut partial1);
+
+                println!( " Theshold Signature Step-9.1: read Partial sig from file for 1st signer and converted backfrom bytes");
+                // create partial sign
+                let partial_sign1=partialsig_from_bytes(partial1);// create partial sign
+                println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
+                // get Tss 3
+                count=3;
+                let mut partial2: [u8; 44]=[0;44];
+                let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
+                
+                      
+                let mut tss_signer = match File::open(&public_tss) {
+                    Ok(tss_signer) => tss_signer,
+                    Err(_) => panic!("no such file"),
+                   };
+                   tss_signer.read_exact(&mut partial2);
+                   
+                   
+                   println!( " Theshold Signature Step-9.2: read Partial sig from file for 1st signer and converted backfrom bytes");
+                
+                // create partial sign
+                   let partial_sign2=partialsig_from_bytes(partial2);
+                   println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
+                   
+                   
+                 
+                 // tss to agregator 
+                 println!( " Theshold Signature Step-10: Aggregating signers");
+                 println!("at aggregator function wih TSS");
+                 std::io::stdin().read_line(&mut name);
+                   println!("{:?}",aggregator.get_signers());
+                   aggregator.include_partial_signature(partial_sign1);
+                   aggregator.include_partial_signature(partial_sign2);
+
+
+                   let aggregator_finalized = aggregator.finalize().unwrap();
+                   println!("at aggregator function wih TSS unwrap");
+                   println!( " Theshold Signature Step-11: Aggregating Finalizing");
+     let  threshold_signature_final: Result<frost_secp256k1::ThresholdSignature, std::collections::HashMap<u32, &str>>  = aggregator_finalized.aggregate();
+
+     println!("");
+     println!("Theshold Signature Step 12 .  wih TSS unwrap");
+     if threshold_signature_final.is_ok()
+     {
+         //threshold_signature=threshold_signature.unwrap();
+         println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
+         println!("Threshold okay");
+
+     }
+     
+     println!("Group key {:?}",final_GroupKey);
+     println!("Group key for party new {:?}", partynew.0);
+     
+     let verification_result = threshold_signature_final.unwrap().verify(&final_GroupKey
+         , &message_hash);
+     println!("Theshold Signature Step 13 at verification.  wih TSS unwrap");
+     if verification_result.is_ok()
+     {
+         //println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
+         println!("TSS signature verified for message hash {:?}",message_hash);
+     }
+/* */    
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+
+         
+         //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
+
+
+         //trying with final group key 
+         //println!("Group key for party new {:?}", partynew.0);
+
+     // let verification_result = threshold_signature_final.unwrap().verify(&&final_GroupKey
+     //     , &message_hash);
+     // println!("Theshold Signature Step 13 at verification.  wih TSS unwrap");
+     // if verification_result.is_ok()
+     // {
+     //     println!("TSS signature verified for message hash {:?}",message_hash);
+     // }
+     }
+     else {
+         // for 7/11 other parties
+         let (mut other_Party_commshare, mut other_party_secret_comm_share) = generate_commitment_share_lists(&mut OsRng, id, 1);
+         //let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
+         // write commitment share and public key in files
+
+         println!("Theshold Signature Step-3 : Generating Commitment shares for one time use ");
+         let message_hash = compute_message_hash(&context[..], &message[..]);
+      //   let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut other_party_secret_comm_share,0,&signers).unwrap();
+          let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
+      
+        println!("{}",public_comshare_filepath);
+        let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
+        let bytesoff: [u8; 70] =public_commitment_to_bytes(&other_Party_commshare);
+        let result=secret_file.write_all(&bytesoff);
+        
+        let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
+      
+        println!("{}",public_keyshare_filepath);
+        let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
+        
+        let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
+        
+        println!( "Public shares Written with Comm shares.  ");
+        println!("Theshold Signature Step-4 : Commitment shares written for use by Aggregator ");
+        println!( "Waiting for Aggreagator GO Ahead to send signer vector  ");
+                 std::io::stdin().read_line(&mut name);
+
+        //read signers vector from file 
+        let mut signer_vector_700 = String::from("/opt/datafrost/")+ "signer_vector_700" + ".txt";
+        let mut signer_700_bytes: [u8; 700]=[0;700];
+             let mut file_signer = match File::open(&signer_vector_700) {
+                 Ok(file_signer) => file_signer,
+                 Err(_) => panic!("no such file"),
+                };
+                file_signer.read_exact(&mut signer_700_bytes);
+                println!( " Theshold Signature Step-7: Retreived Signer 700 bytes to create TSS ");
+                
+                let signer_700_from_file=signer_bytes_to_ten_vector(signer_700_bytes);
+        let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut other_party_secret_comm_share,0,&signer_700_from_file).unwrap();
+                println!("{:?}",signer_700_from_file);
+                println!("{:?}", party_partial);
+                let output: [u8; 44]=partialsig_to_bytes(party_partial);
+                let newtss=partialsig_from_bytes(output);
+                println!("writign partial signature to file ",);
+
+                let mut public_tss = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/tss" + id.to_string().trim()+ ".txt";
+                //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
+                  println!("{}",public_tss);
+                  let mut tss_file = File::create(&public_tss).expect("creation failed");
+                  let result=tss_file.write_all(&output);
+                  println!( " Theshold Signature Step-8: Created Tss for Party  id {} ", id);
+                  println!( "Work for Party id {}  completed  ", id);
+
+                std::io::stdin().read_line(&mut name);
+                std::io::stdin().read_line(&mut name);
+                //let newtss=partialsig_from_bytes(output);
+                //println!("{:?}", newtss);
+                
+                
+         
+     }
+
   
-}
+}//close the keygen
 
 
 
@@ -1434,6 +1714,106 @@ returntss
     
 
 }
+// code for 10 signers
+fn signer_vector_ten_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, indexsign: u32)->[u8;700] 
+{
+    
+    // Custom bytes 
+    //0..33 first share 
+    //33..66 second share 
+    //66.70 index
+    // loop through 
+    /*
+    returnbytes[0..33].copy_from_slice(&bytes1);
+    returnbytes[33..66].copy_from_slice(&bytes2);
+    returnbytes[66..70].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+     */
+    let mut index=indexsign;
+    let mut returnbytes: [u8;700]=[0;700];
+    let mut count =indexsign;
+    let mut start_bytes=0;
+    let mut end_bytes=33;
+    while count<10
+    {
+        let bytes1=signers[index as usize].published_commitment_share.0.to_bytes();
+        let bytes2=signers[index as usize].published_commitment_share.1.to_bytes();
+        returnbytes[start_bytes..end_bytes].copy_from_slice(&bytes1);
+        start_bytes=end_bytes;
+        end_bytes=end_bytes+33;
+        returnbytes[start_bytes..end_bytes].copy_from_slice(&bytes2);
+        start_bytes=end_bytes;
+        end_bytes=end_bytes+4;
+        returnbytes[start_bytes..end_bytes].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+        start_bytes=end_bytes;
+        end_bytes=end_bytes+33;
+        count=count+1;
+        index=index+1;
+
+    }
+       returnbytes    
+      
+    
+
+}
+fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::signature::Signer>
+{
+   // Custom bytes 
+    //0..33 first share 
+    //33..66 second share 
+    //66.70 index
+    // loop through 
+   
+
+    let mut signervector :Vec<frost_secp256k1::signature::Signer>=vec![];
+    let mut indexbytes:[u8;4]=[0;4];
+    let mut count=0;
+    let mut startbytes=0;
+    let mut endbytes=33;
+    while count <10
+    {
+        let mut affinebytes:[u8;33]=[0;33];
+        affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
+        
+        let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
+        let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();   
+        startbytes=endbytes;
+        endbytes=endbytes+33;
+     let mut affinebytes:[u8;33]=[0;33];
+          
+     affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
+     let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
+     let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
+     startbytes=endbytes;
+     endbytes=endbytes+4;
+     indexbytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
+     let indexcommit:u32=u32::from_be_bytes(indexbytes);
+     // copy affines converted from memory bytes to back 
+     //signervector[0].published_commitment_share.0.clone_from(&affine1);
+     //signervector[0].published_commitment_share.1.clone_from(&affine2);
+     let  signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
+    //signer1.participant_index=indexcommit;
+    //signer1.published_commitment_share.0.clone_from(&affine1);
+    //signer1.published_commitment_share.0.clone_from(&affine2);
+    signervector.push(signer1);
+    startbytes=endbytes;
+    endbytes=endbytes+33;
+    count=count+1;
+
+    }
+
+    return signervector;
+
+    
+
+}
+
+
+
+
+
+
+
+
 // fn public_bytes_to_commitment2(returnbytes:[u8;70] )->PublicCommitShareListformain
 // {
     
