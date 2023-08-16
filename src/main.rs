@@ -233,7 +233,7 @@ fn main() {
       println!("{}",other_Party_vectors.len());
       println!("{}",counter_party);
       println!("waiting for DKG round 1");
-      std::io::stdin().read_line(&mut name);
+      let _= std::io::stdin().read_line(&mut name);
 
 
      // Go For DKG Part-1
@@ -258,7 +258,7 @@ fn main() {
        let result=secret_file.write_all(&fullparty);
 
        println!("Checking all files are written with party scecrets");
-       std::io::stdin().read_line(&mut name);
+       let _= std::io::stdin().read_line(&mut name);
        
 
           // Start loop for retreiving secrets from all personnel
@@ -313,18 +313,7 @@ fn main() {
   
           let mut partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
           
-        //   //let mut partysecretkey=blabblabbalb.as_mut().unwrap().1;
-        //   println!("Groupkey");
-        //   println!("{:?}",Partyfinale.0);
-           
-  
-        //    println!("Secret key full ");
-        //     println!("{:?}",&mut Partyfinale.1);
-        //   // println!("{:?}",&mut blabblabbalb.1);
-        //    println!("Public key from Private key ");
-        //    println!("{:?}",&mut Partyfinale.1.to_public());
-
-           println!("Groupkey");
+                   println!("Groupkey");
            println!("{:?}",partyfinale.0);
            
    
@@ -359,39 +348,9 @@ fn main() {
                println!("Theshold Signature Step-1 : Creating Signature Aggregator with context, message, params and group key ");
                 let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
                 
-                //println!("{:?}",Agg_Party_commshare.commitments[0].0.to_bytes());
-                //println!("{:?}",Agg_Party_commshare.commitments[0].0.to_bytes().len());
-                //let sample=bincode::serialize(&Agg_Party_commshare.commitments[0]);
-                //let pubkey: Result<PublicCommitmentShareList, Box<bincode::ErrorKind>>=bincode::deserialize(&sample.unwrap());
-                //let value=AffinePoint::from_bytes(&Agg_Party_commshare.commitments[0].0.to_bytes());
-                //println!("{:?}",value.unwrap().to_bytes());
-                //let value=AffinePoint::from_bytes(&Agg_Party_commshare.commitments[0].1.to_bytes());
-                //println!("{:?}",value.unwrap().to_bytes());
-                //println!("Bytes commitments ");      
+                
                 let bytesoff: [u8; 70] =public_commitment_to_bytes(&agg_Party_commshare);
 
-                
-            //    println!("{:?}",bytesoff);
-            //    println!("***********************");
-            //    println!("***********************");
-            //    println!("***********************");
-            //    println!("{:?}",Agg_Party_commshare);
-            //    println!("***********************");
-            //    println!("*****From return function*****");
-            //    println!("{:?}",public_bytes_to_commitment(bytesoff));
-               //let xya:PublicCommitmentShareList=new PublicCommitmentShareList();
-            //    xya.participant_index=1;
-            //    xya.commitments[0].0.clone_from(&value.unwrap());
-
-               // let xy=PublicCommitmentShareList::from(Agg_Party_commshare);
-                //println!("{:?}",pubkey.unwrap().commitments[0].0.to_bytes());
-
-                //let xyz:PublicCommitmentShareList;
-               // xyz.participant_index=1;
-                //let value=AffinePoint::to_bytes(&Agg_Party_commshare.commitments[0].0);
-
-                //let part1=Agg_Party_commshare.commitments[0].0.to_bytes();
-                //let part2=Agg_Party_commshare.commitments[0].1.to_bytes();
 
                 // write commitment share and public key in files
                 let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
@@ -407,21 +366,12 @@ fn main() {
                 
                 let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
                 println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
-                std::io::stdin().read_line(&mut name);
+                let _= std::io::stdin().read_line(&mut name);
                 //PublicKey::from_sec1_bytes(bytes)
                 //partyfinale.1.to_public().share.to_bytes()
                 let  final_GroupKey: GroupKey= partyfinale.0;
                 let  partynew=partyfinale;
-                //partynew.0.clone_from(partyfinale.0
-                    
-
-                    // let affinx: AffinePoint =AffinePoint::GENERATOR();
-                    // let mut final_GroupKey: GroupKey= GroupKey(AffinePoint);
-                    // final_GroupKey.clone_from(&partynew.0);
-                
-                //AffinePoint::from_bytes()
-                //let alpha :IndividualPublicKey=IndividualPublicKey { index: (), share: }
-                //partynew.1.to_public().clone_from(source)
+               
                 let message_hash = compute_message_hash(&context[..], &message[..]);
               //  let signers = aggregator.get_signers();
                 
@@ -440,10 +390,7 @@ fn main() {
                      println!("Reading Public Comm share for Party id {}",count);
                                
                     let comms=public_bytes_to_commitment(bytespublicexact);
-                    //let commbnew:PublicCommitmentShareList=PublicCommitmentShareList { participant_index: comms.participant_index, commitments: comms.commitments };
-
-                    // get commitment share list from bytes
-
+                   
                     let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_final_key" + count.to_string().trim()+ ".txt";
                     let mut bytespublickey: [u8; 33]=[0;33];
                     let mut file_pubkey = match File::open(&public_keyshare_filepath) {
@@ -467,21 +414,11 @@ fn main() {
                     let xyz= xyz.unwrap();
 
                 aggregator.include_signer(count, comms.commitments[0],alpha);     
-                
-                   
-                    //let publickey_party_count=IndividualPublicKey::clone_from(&mut self, source)
-                     
                      count=count+1;
 
                 }
 
-
-              
-                //aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
-                //aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
                   let signers: &Vec<frost_secp256k1::signature::Signer> = aggregator.get_signers();
-                  
-                //println!("{:?}",signers);
                 println!("{:?}",signers);
                 let bytessamoke=signer_vector_tobytes(signers, 0);
                 println!("{:?}",bytessamoke);
@@ -495,7 +432,7 @@ fn main() {
                     println!( "go ahead on signers for writing Partial signatures aggreagotr party ");
                     println!( "Waiting for all other parties to write TSS ");
                     println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
-                             std::io::stdin().read_line(&mut name);
+                             let _= std::io::stdin().read_line(&mut name);
 
                              let mut partial1: [u8; 44]=[0;44];
                                 let mut count=2;      
@@ -535,7 +472,7 @@ fn main() {
                         // tss to agregator 
                         println!( " Theshold Signature Step-10: Aggregating signers");
                         println!("at aggregator function wih TSS");
-                        std::io::stdin().read_line(&mut name);
+                        let _= std::io::stdin().read_line(&mut name);
                           println!("{:?}",aggregator.get_signers());
                           aggregator.include_partial_signature(partial_sign1);
                           aggregator.include_partial_signature(partial_sign2);
@@ -567,25 +504,7 @@ fn main() {
                 //println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
                 println!("TSS signature verified for message hash {:?}",message_hash);
             }
-/* */    
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
 
-                
-                //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-
-
-                //trying with final group key 
-                //println!("Group key for party new {:?}", partynew.0);
-
-            // let verification_result = threshold_signature_final.unwrap().verify(&&final_GroupKey
-            //     , &message_hash);
-            // println!("Theshold Signature Step 13 at verification.  wih TSS unwrap");
-            // if verification_result.is_ok()
-            // {
-            //     println!("TSS signature verified for message hash {:?}",message_hash);
-            // }
             }
             else {
                 // for 2/3 other parties
@@ -613,7 +532,7 @@ fn main() {
                println!( "Public shares Written with Comm shares.  ");
                println!("Theshold Signature Step-4 : Commitment shares written for use by Aggregator ");
                println!( "Waiting for Aggreagator GO Ahead to send signer vector  ");
-                        std::io::stdin().read_line(&mut name);
+                        let _= std::io::stdin().read_line(&mut name);
 
                //read signers vector from file 
                let mut signer_140_file = String::from("/opt/datafrost/")+ "signer_vector_140" + ".txt";
@@ -641,8 +560,8 @@ fn main() {
                          println!( " Theshold Signature Step-8: Created Tss for Party  id {} ", id);
                          println!( "Work for Party id {}  completed  ", id);
 
-                       std::io::stdin().read_line(&mut name);
-                       std::io::stdin().read_line(&mut name);
+                       let _= std::io::stdin().read_line(&mut name);
+                       let _= std::io::stdin().read_line(&mut name);
                        //let newtss=partialsig_from_bytes(output);
                        //println!("{:?}", newtss);
                        
@@ -671,7 +590,7 @@ fn main() {
       
          let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
             println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-    //         std::io::stdin().read_line(&mut name);
+    //         let _= std::io::stdin().read_line(&mut name);
             fs::remove_file(&participantvectorpath).expect("could not remove file");
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
@@ -775,24 +694,16 @@ fn main() {
             counter_party=counter_party+1;
 
         }
-        //println!("{}",other_Party_vectors.len());
-        //println!("{}",counter_party);
+        
         std::io::stdin().read_line(&mut name);
 
-       // Go For DKG Part-1
-
-        //DKG first Part  Round One 
-        // with multi parties
-        
-        
         let mut partystate=DistributedKeyGeneration::<_>::new(&params,&id,&_partycoeffs,&mut other_Party_vectors).or(Err(())).unwrap();
 
         let mut partyone_secrets: &Vec<SecretShare>=partystate.their_secret_shares().unwrap();
 
-        // println!("Secrets Vector Done for Id {} ",id);
+
         let total_secret_shares=partyone_secrets.len();
-       //  println!("{:?}",partyone_secrets);
-      //   println!("{:?}",partyone_secrets.len());
+
       // full party 440 
             /*
             Full mode 11       
@@ -853,11 +764,8 @@ fn main() {
                     break; // only one entry of self in any shared secret vector file
                 }
                 vari_count=vari_count+1;
-
             }
-
-
-                } // else 
+        } // else 
                 file_nos=file_nos+1;
                 
             } // while reading all files
@@ -888,12 +796,7 @@ fn main() {
              println!("{:?}",partyfinale.1.key.to_bytes());
              println!("Public key bytes ");
              println!("{:?}",partyfinale.1.to_public().share.to_bytes());
-             //println!("{:?}", partyfinale
-
-             //println!("{:?}",&mut Partyfinale
-           // println!("{:?}",&mut blabblabbalb.1);
-            // println!("Public key from Private key ");
-            // println!("{:?}",&mut Partyfinale.1.to_public());
+         
     
     // need for signing 
 /*
@@ -996,7 +899,7 @@ fn main() {
              let xyz=PublicKey::from_affine(pk_sk_affinepoint);
              let xyz= xyz.unwrap();
 
-         aggregator.include_signer(count, comms.commitments[0],alpha);     
+             aggregator.include_signer(count, comms.commitments[0],alpha);     
          
             
              //let publickey_party_count=IndividualPublicKey::clone_from(&mut self, source)
@@ -1025,12 +928,12 @@ fn main() {
          //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
            //println!("{}",public_keyshare_filepath);
            let mut signer_file_writer = File::create(&signer_700_file).expect("creation failed");
-             signer_file_writer.write_all(&bytessamoke);
+           let _=  signer_file_writer.write_all(&bytessamoke);
              println!("signer bytes written ");
              println!( "go ahead on signers for writing Partial signatures aggreagotr party ");
              println!( "Waiting for all other parties to write TSS ");
              println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
-                      std::io::stdin().read_line(&mut name);
+                   let _=   std::io::stdin().read_line(&mut name);
                     let mut counttss=2;
                       while counttss <12
                       {
@@ -1042,7 +945,7 @@ fn main() {
                              Ok(tss_signer) => tss_signer,
                              Err(_) => panic!("no such file"),
                                  };
-                            tss_signer.read_exact(&mut partial1);
+                           let _= tss_signer.read_exact(&mut partial1);
 
                           println!( " Theshold Signature Step-9.1: read Partial sig from file for {} signer and converted backfrom bytes",counttss+1);
                              // create partial sign
@@ -1053,10 +956,7 @@ fn main() {
                              counttss=counttss+1;   
                          }
 
-                
-                              
-
-                   let aggregator_finalized = aggregator.finalize().unwrap();
+            let aggregator_finalized = aggregator.finalize().unwrap();
                    println!("at aggregator function wih TSS unwrap");
                    println!( " Theshold Signature Step-11: Aggregating Finalizing");
             let  threshold_signature_final: Result<frost_secp256k1::ThresholdSignature, std::collections::HashMap<u32, &str>>  = aggregator_finalized.aggregate();
@@ -1082,25 +982,7 @@ fn main() {
          //println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
          println!("TSS signature verified for message hash {:?}",message_hash );
      }
-/* */    
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-//partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
 
-         
-         //partyfinale.1.sign(&message_hash, group_key, my_secret_commitment_share_list, my_commitment_share_index, signers)
-
-
-         //trying with final group key 
-         //println!("Group key for party new {:?}", partynew.0);
-
-     // let verification_result = threshold_signature_final.unwrap().verify(&&final_GroupKey
-     //     , &message_hash);
-     // println!("Theshold Signature Step 13 at verification.  wih TSS unwrap");
-     // if verification_result.is_ok()
-     // {
-     //     println!("TSS signature verified for message hash {:?}",message_hash);
-     // }
      }
      else {
          // for 7/11 other parties
@@ -1128,7 +1010,7 @@ fn main() {
         println!( "Public shares Written with Comm shares.  ");
         println!("Theshold Signature Step-4 : Commitment shares written for use by Aggregator ");
         println!( "Waiting for Aggreagator GO Ahead to send signer vector  ");
-                 std::io::stdin().read_line(&mut name);
+               let _ = std::io::stdin().read_line(&mut name);
 
         //read signers vector from file 
         let mut signer_vector_700 = String::from("/opt/datafrost/")+ "signer_vector_700" + ".txt";
@@ -1137,7 +1019,7 @@ fn main() {
                  Ok(file_signer) => file_signer,
                  Err(_) => panic!("no such file"),
                 };
-                file_signer.read_exact(&mut signer_700_bytes);
+                let _=  file_signer.read_exact(&mut signer_700_bytes);
                 println!( " Theshold Signature Step-7: Retreived Signer 700 bytes to create TSS ");
                 
                 let signer_700_from_file=signer_bytes_to_ten_vector(signer_700_bytes);
@@ -1156,8 +1038,8 @@ fn main() {
                   println!( " Theshold Signature Step-8: Created Tss for Party  id {} ", id);
                   println!( "Work for Party id {}  completed  ", id);
 
-                std::io::stdin().read_line(&mut name);
-                std::io::stdin().read_line(&mut name);
+                let _=std::io::stdin().read_line(&mut name);
+                let _=std::io::stdin().read_line(&mut name);
                 //let newtss=partialsig_from_bytes(output);
                 //println!("{:?}", newtss);
                 
@@ -1305,12 +1187,7 @@ party_convert
         resultbytes[0..32].clone_from_slice(&rbytes.as_ref());
         let sbytes=bincode::serialize(&zkp.s).unwrap();
         resultbytes[32..64].clone_from_slice(&sbytes.as_ref());
-        /*
-        let generic_array: [u32; 4] = [1, 2, 3, 4];
-        let fixed_size_array: [u8; 16] = unsafe { std::mem::transmute(generic_array) };
-        
-         */
-        //loop through 7 Commitments of 33 bytes 
+                //loop through 7 Commitments of 33 bytes 
         let mut commit_count=0;
         let mut startin_byte_index=64;
         while commit_count<7
@@ -1325,38 +1202,24 @@ party_convert
         
         resultbytes[startin_byte_index..299].copy_from_slice(index.to_be_bytes().as_slice());
         
-    
-          
-    
-    
-    
         resultbytes
     }
 
     fn convert_party3_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;150]{
 
-
-
         let mut resultbytes:[u8;150]=[0;150];
         let mut resultdummy: [u8;40]=[0;40];
         println!("{}",zkp.r.to_bytes().len());
         let rbytes=bincode::serialize(&zkp.r).unwrap();
-//        let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(&rbytes.as_ref());
-        
-      //  println!("Party Rbytes for {} {:?}",index,rbytes); // for verification of Party R
-      //  println!("Party R for {} {:?} after deserial",index,rkey.unwrap()); // for verification of Party R
+    
         let split=rbytes.split_at(40);
         resultbytes[0..40].clone_from_slice(&split.0);
-        //println!("Party S for {} {:?}",index,zkp.s); // for verification of Party S
+       
         let sbytes=bincode::serialize(&zkp.s).unwrap();
         let split=sbytes.split_at(40);
         resultbytes[40..80].clone_from_slice(&split.0);
         let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(&sbytes.as_ref());
-        
-       // println!("Party S for {} {:?}",index,zkp.s); // for verification of Party R
-       // println!("Party S for {}  after deserial{:?}",index,skey.unwrap()); // for verification of Party R
-        
-        //loop through 2 Commitments of 33 bytes 
+      
         let mut commit_count=0;
         let mut startin_byte_index=80;
         while commit_count<2
@@ -1372,9 +1235,6 @@ party_convert
         resultbytes[startin_byte_index..150].copy_from_slice(index.to_be_bytes().as_slice());
         
           
-        
-    
-    
         resultbytes
     }
 
@@ -1400,8 +1260,6 @@ party_convert
         let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_s.as_ref());
         let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_r.as_ref());
         
-        // prepare zk proof from scaler values
-        //let value =frost_secp256k1::nizk::NizkOfSecretKey{s,r}
         let  zkpfull :frost_secp256k1::nizk::NizkOfSecretKey= frost_secp256k1::nizk::NizkOfSecretKey { s: skey.unwrap(), r: rkey.unwrap() };
        
         let mut commit=0;
@@ -1418,11 +1276,7 @@ party_convert
             commit=commit+1;
     
         }
-        //let mut poof :ZKPSecretKey;
         
-        
-        
-    
         let  party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
     
     
@@ -1443,11 +1297,8 @@ party_convert
         let size: usize =writebytes.len();
         endindex=endindex+size;
         secretbytes[startindex..endindex].copy_from_slice(writebytes.as_slice());
-
-        //bytes_for_r.copy_from_slice(&party_bytes[0..40]);
-        
+              
         println!("{}",size);
-
         count=count+1;
         startindex=endindex;
 
@@ -1491,14 +1342,7 @@ pub struct PublicCommitShareListformain {
     pub commitments: Vec<(AffinePoint, AffinePoint)>,
 }
 
-// impl PublicCommitShareListformain {
-//     fn new() -> Self {
-//         {
-
-//         }
-//     }
-// }
-
+/
 fn public_commitment_to_bytes(publiccomitmentsharelist:&PublicCommitmentShareList )->[u8;70] 
 {
     // Struct 33 +33 +4 =70bytes
@@ -1514,16 +1358,9 @@ fn public_commitment_to_bytes(publiccomitmentsharelist:&PublicCommitmentShareLis
 fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
 {
     
-    //let mut bytesvalue: [u8;70]=[0;70];
     let mut indexbytes:[u8;4]=[0;4];
     indexbytes.copy_from_slice(&returnbytes[66..70]);
     let indexcommit:u32=u32::from_be_bytes(indexbytes);
-    
-    // let (mut other_Party_commshare, mut other_party_secret_comm_share) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
-    
-    
-
-    
      let mut affinebytes:[u8;33]=[0;33];
      affinebytes.copy_from_slice(&returnbytes[0..33]);
      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
@@ -1540,33 +1377,9 @@ fn public_bytes_to_commitment(returnbytes:[u8;70] )->PublicCommitmentShareList
 
      let mut vec_of_tuples = Vec::new();
      vec_of_tuples.push(tuple);
-
-
-     //let mut points: Vec<AffinePoint> = Vec::new();
+     let other_party_commshare=PublicCommitmentShareList { participant_index: indexcommit,commitments:vec_of_tuples  };
      
-     
-     //points.push(affine1);
-     //points.push(affine2);
-     
-     //let Commitment :CommitmentShare;
-     
-     let other_Party_commshare=PublicCommitmentShareList { participant_index: indexcommit,commitments:vec_of_tuples  };
-     //other_Party_commshare.commitments[0].0.clone_from(&affine1);
-     //other_Party_commshare.commitments[0].1.clone_from(&affine2);
-
-
-    // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
-    // other_Party_commshare.commitments[0].0.clone_from(source)
-    // other_Party_commshare.commitments[0].1.clone_from(source)
-   // bytesvalue.clone_from_slice(&returnbytes[0..33]);
-
-    //let mut returncommit: PublicCommitmentShareList=
-    //returncommit.participant_index=1;
-    //let mut genarray=GenericArray::from_slice(bytesvalue.as_ref());
-   // let mut returncommit: PublicCommitmentShareList=PublicCommitShareList::into(self)
-    //let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
-    //let affine1=AffinePoint::from_bytes(&returnbytes[0..33]).unwrap();
-    other_Party_commshare
+    other_party_commshare
 
 }
 fn signer_vector_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, indexsign: u32)->[u8;140] 
@@ -1580,7 +1393,7 @@ fn signer_vector_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, inde
     returnbytes[33..66].copy_from_slice(&bytes2);
     returnbytes[66..70].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
 
-    //copy second signer in memory 
+
     index=index+1;
     //
     let bytes1=signers[index as usize].published_commitment_share.0.to_bytes();
@@ -1590,13 +1403,8 @@ fn signer_vector_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, inde
     returnbytes[136..140].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
 
 
-
-    // returnbytes[0..33].copy_from_slice(&publiccomitmentsharelist.commitments[0].0.to_bytes());
-    // returnbytes[33..66].copy_from_slice(&publiccomitmentsharelist.commitments[0].1.to_bytes());
-    // returnbytes[66..70].copy_from_slice(&publiccomitmentsharelist.participant_index.to_be_bytes());
-    
     returnbytes    
-    //let firstbytes=public_commitment_to_bytes(&signers[0].published_commitment_share);
+
     
     
 
@@ -1609,10 +1417,6 @@ fn signer_bytes_tovector( signerbytes:[u8;140] )-> Vec<frost_secp256k1::signatur
     indexbytes.copy_from_slice(&signerbytes[66..70]);
     let indexcommit:u32=u32::from_be_bytes(indexbytes);
 
-    
-    //signervector[0].participant_index=indexcommit;
-    //signervector[0].published_commitment_share
-
     let mut affinebytes:[u8;33]=[0;33];
      affinebytes.copy_from_slice(&signerbytes[0..33]);
      let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
@@ -1621,24 +1425,15 @@ fn signer_bytes_tovector( signerbytes:[u8;140] )-> Vec<frost_secp256k1::signatur
      affinebytes.copy_from_slice(&signerbytes[33..66]);
      let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
-     // copy affines converted from memory bytes to back 
-     //signervector[0].published_commitment_share.0.clone_from(&affine1);
-     //signervector[0].published_commitment_share.1.clone_from(&affine2);
-     let mut signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
-    //signer1.participant_index=indexcommit;
-    //signer1.published_commitment_share.0.clone_from(&affine1);
-    //signer1.published_commitment_share.0.clone_from(&affine2);
+      let mut signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
+ 
     signervector.push(signer1);
 
 // Convert back second signers 
 
     indexbytes.copy_from_slice(&signerbytes[136..140]);
     let indexcommit:u32=u32::from_be_bytes(indexbytes);
-
     
-    //signervector[1].participant_index=indexcommit;
-    //signervector[0].published_commitment_share
-
     let mut affinebytes:[u8;33]=[0;33];
      affinebytes.copy_from_slice(&signerbytes[70..103]);
      let genarrya=GenericArray::from_slice(affinebytes.as_ref());
@@ -1647,15 +1442,8 @@ fn signer_bytes_tovector( signerbytes:[u8;140] )-> Vec<frost_secp256k1::signatur
      affinebytes.copy_from_slice(&signerbytes[103..136]);
      let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
-     // copy affines converted from memory bytes to back 
-     //signervector[1].published_commitment_share.0.clone_from(&affine1);
-     //signervector[1].published_commitment_share.1.clone_from(&affine2);
-
-     let mut signer2:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
-    // signer2.participant_index=indexcommit;
-    // signer2.published_commitment_share.0.clone_from(&affine1);
-    // signer2.published_commitment_share.0.clone_from(&affine2);
-    signervector.push(signer2);
+         let mut signer2:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
+        signervector.push(signer2);
     return signervector;
 
     
@@ -1692,7 +1480,6 @@ fn partialsig_from_bytes(bytes:[u8;44])->PartialThresholdSignature{
     
 returntss
     
-
 }
 // code for 10 signers
 fn signer_vector_ten_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, indexsign: u32)->[u8;700] 
@@ -1703,7 +1490,7 @@ fn signer_vector_ten_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, 
     //33..66 second share 
     //66.70 index
     // loop through 
-    /*
+    /*Convert  affine points and index to 70 bytes 
     returnbytes[0..33].copy_from_slice(&bytes1);
     returnbytes[33..66].copy_from_slice(&bytes2);
     returnbytes[66..70].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
@@ -1742,7 +1529,7 @@ fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::sig
     //33..66 second share 
     //66.70 index
     // loop through 
-   
+   // Convert 70 bytes back to 2 affine points and index and use signer constructor to create signer again 
 
     let mut signervector :Vec<frost_secp256k1::signature::Signer>=vec![];
     let mut indexbytes:[u8;4]=[0;4];
@@ -1751,15 +1538,15 @@ fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::sig
     let mut endbytes=33;
     while count <10
     {
+       
         let mut affinebytes:[u8;33]=[0;33];
         affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
-        
+       
         let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
         let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();   
         startbytes=endbytes;
         endbytes=endbytes+33;
-     let mut affinebytes:[u8;33]=[0;33];
-          
+     let mut affinebytes:[u8;33]=[0;33];     
      affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
      let  genarrya=GenericArray::from_slice(affinebytes.as_ref());
      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
@@ -1767,13 +1554,7 @@ fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::sig
      endbytes=endbytes+4;
      indexbytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
      let indexcommit:u32=u32::from_be_bytes(indexbytes);
-     // copy affines converted from memory bytes to back 
-     //signervector[0].published_commitment_share.0.clone_from(&affine1);
-     //signervector[0].published_commitment_share.1.clone_from(&affine2);
-     let  signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };
-    //signer1.participant_index=indexcommit;
-    //signer1.published_commitment_share.0.clone_from(&affine1);
-    //signer1.published_commitment_share.0.clone_from(&affine2);
+     let  signer1:frost_secp256k1::signature::Signer=Signer { participant_index: indexcommit, published_commitment_share: (affine1,affine2) };        
     signervector.push(signer1);
     startbytes=endbytes;
     endbytes=endbytes+33;
@@ -1782,55 +1563,9 @@ fn signer_bytes_to_ten_vector( signerbytes:[u8;700] )-> Vec<frost_secp256k1::sig
     }
 
     return signervector;
-
-    
+   
 
 }
 
 
-
-
-
-
-
-
-// fn public_bytes_to_commitment2(returnbytes:[u8;70] )->PublicCommitShareListformain
-// {
-    
-//     //let mut bytesvalue: [u8;70]=[0;70];
-//     let mut indexbytes:[u8;4]=[0;4];
-//     indexbytes.copy_from_slice(&returnbytes[66..70]);
-//     let indexcommit:u32=u32::from_be_bytes(indexbytes);
-//     let mut other_Party_commshare:PublicCommitShareListformain;
-//     // let (mut other_Party_commshare, mut other_party_secret_comm_share) = generate_commitment_share_lists(&mut OsRng, indexcommit, 1);
-//     /*
-    
-    
-
-    
-//      let mut affinebytes:[u8;33]=[0;33];
-//      affinebytes.copy_from_slice(&returnbytes[0..33]);
-//      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
-//      let affine1 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
-     
-//      affinebytes.copy_from_slice(&returnbytes[33..66]);
-//      let mut genarrya=GenericArray::from_slice(affinebytes.as_ref());
-//      let affine2 :AffinePoint=AffinePoint::from_bytes(&genarrya).unwrap();
-//      other_Party_commshare.commitments[0].0.clone_from(&affine1);
-//      other_Party_commshare.commitments[0].1.clone_from(&affine2);
-//     // let affine1 : AffinePoint=AffinePoint::from_bytes(&affinebytes.as_ref()).unwrap();
-//     // other_Party_commshare.commitments[0].0.clone_from(source)
-//     // other_Party_commshare.commitments[0].1.clone_from(source)
-//    // bytesvalue.clone_from_slice(&returnbytes[0..33]);
-
-//     //let mut returncommit: PublicCommitmentShareList=
-//     //returncommit.participant_index=1;
-//     //let mut genarray=GenericArray::from_slice(bytesvalue.as_ref());
-//    // let mut returncommit: PublicCommitmentShareList=PublicCommitShareList::into(self)
-//     //let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
-//     //let affine1=AffinePoint::from_bytes(&returnbytes[0..33]).unwrap();
-//      */
-// other_Party_commshare
-
-//}
 
