@@ -50,6 +50,8 @@ use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
 use crate::frost_secp256k1::generate_commitment_share_lists;
+//Comvert the contents of a file into a vector of string to mimic read lines one by one 
+//
 fn lines_from_file(filename: &str) -> Vec<String> {
     let mut file = match File::open(filename) {
         Ok(file) => file,
@@ -65,7 +67,7 @@ fn lines_from_file(filename: &str) -> Vec<String> {
         .collect();
     lines
 }
-
+// The secret Vector of  particpant to be converted to bytes 
 fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
 {
     //Structure of Secretbytes 
@@ -900,21 +902,15 @@ fn main() {
              let xyz= xyz.unwrap();
 
              aggregator.include_signer(count, comms.commitments[0],alpha);     
-         
-            
-             //let publickey_party_count=IndividualPublicKey::clone_from(&mut self, source)
-              
+          
               count=count+1;
 
          }
 
 
-       
-         //aggregator.include_signer(3, p3_public_comshares.commitments[0], (&p3_sk).into());
-         //aggregator.include_signer(4, p4_public_comshares.commitments[0], (&p4_sk).into());
            let signers: &Vec<frost_secp256k1::signature::Signer> = aggregator.get_signers();
            
-         //println!("{:?}",signers);
+
          println!("{:?}",signers);
          println!("{:?}",signers.capacity());
          println!("Stop here for the signer vector ");
@@ -1042,41 +1038,52 @@ fn main() {
                 let _=std::io::stdin().read_line(&mut name);
                 //let newtss=partialsig_from_bytes(output);
                 //println!("{:?}", newtss);
-                
-                
-         
      }
 
-  
 }//close the keygen
 
 
-
+// Function to convert Participant vector to bytes which contains , 
+//Scaler R and S along with index of Party and Commitment shares. 
+// The value of commitment share count is dependent upon the set threshold, 
+// which in this case is 7
+//The function is only applicable for frost with parameters of 7/11 where 7 is  (Threshold) and 11( total parties) 
 fn convert_party_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;315]{
-
+        // Return bytes of count 315
         // Structure of bytes
         // ZKP R scaler 40 bytes
         // ZKP S scaler 40 bytes
         // 7 Commitments shares 33 bytes=231
         // index u32 ->u8 = 4 bytes
         // Total=40+40+33+33+33+33+33+33+33+4=315 
-
+// Create a fixed size byte array of 315 size to return 
     let mut resultbytes:[u8;315]=[0;315];
-    //let mut resultdummy: [u8;40]=[0;40];
+    
+    //No direct method is available to Prepare Scalers back from bytes 
+    //so an indirect method was derived and the serialization code 
+    // of bincode was used to serialze Scaler  and vice versa.
+    //The only draw back is that the size of original scaler is 32 bytes while converting it 
+    // using bincode makes it 40 bytes. 
+    
     let rbytes=bincode::serialize(&zkp.r).unwrap();
     let split=rbytes.split_at(40);
     resultbytes[0..40].clone_from_slice(&split.0);
-    //copy R bytes to resulant bytes
+    //copy R bytes to resulant bytes at the start of byte array
     let sbytes=bincode::serialize(&zkp.s).unwrap();
     let split=sbytes.split_at(40);
     resultbytes[40..80].clone_from_slice(&split.0);
-    //copy S bytes to resulant bytes
-    
+    //copy S bytes to resulant bytes at the specified location 
+    // Total commitments are 7 in our case due to theshold
     let mut commit_count=0;
     let mut startin_byte_index=80;
     // start loop to copy all commitment vectors to resulant bytes
     while commit_count<7
-    {   let ending_index=startin_byte_index+33;
+    
+    {   // Each commitment is 33 bytes long but to be sure that no ir-regular 
+        // data is copied only 33 bytes are split from the usized byte array into 
+        // generic array and then using the split function are split at specified size . 
+        //Resulting 33 bytes are cloned  from slice. 
+        let ending_index=startin_byte_index+33;
         let commitmentbytes=commitments_party.commitments[commit_count].to_bytes();
         let commit_split=commitmentbytes.split_at(33);
         resultbytes[startin_byte_index..ending_index].clone_from_slice(commit_split.0);
@@ -1096,7 +1103,8 @@ pub struct ZKPSecretKey {
     pub r: Scalar,
 }
 
-
+// Function to convert Participant vector from bytes to Particpant object 
+// This function is for frost with parameters of 7/11 where 7 is  (Threshold) and 11( total parties) 
 fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
 {
     // Structure of bytes
@@ -1105,60 +1113,76 @@ fn convert_bytes_to_party(party_bytes: &[u8;315]) -> (Participant)
         // 7 Commitments shares 33 bytes=231
         // index u32 ->u8 = 4 bytes
         // Total=40+40+33+33+33+33+33+33+33+4=315 
+    // Create an empty commitment Vector 
     let mut commit_vector:Vec<k256::ProjectivePoint>=vec!();
+
     
     let mut bytes_sequence :[u8;4]=[0,0,0,0];
     bytes_sequence.clone_from_slice(&party_bytes[311..315]);
 
     
-    //let value_index=indexconvert as u32
-    // convert u8 to u32 formation of Index
+    // Since No direct conversion from u8 to u32 is available, 
+    // we skim through 8 bytes and converting them during the process
+    //  and convert u8 to u32 to form Index
     let index_u32_integer: u32 = ((bytes_sequence[0] as u32) << 24)
                     | ((bytes_sequence[1] as u32) << 16)
                     | ((bytes_sequence[2] as u32) << 8)
                     | (bytes_sequence[3] as u32);;
    
+   // copy r and s bytes from slice 
+   // to convert these bytes back into scaler using bincode
     let mut bytes_for_r: [u8;40]=[0;40];
-    let mut bytes_for_s:[u8;40]=[0;40];
-    // copy r and s bytes from slice 
     bytes_for_r.copy_from_slice(&party_bytes[0..40]);
+    let mut bytes_for_s:[u8;40]=[0;40];
     bytes_for_s.copy_from_slice(&party_bytes[40..80]);
-
-    // create S and R from De-Serializer 
+    
+    // create S and R from De-Serializing bincode and  
           
     let  skey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_s.as_ref());
     let  rkey: Result<Scalar, Box<bincode::ErrorKind>>  =bincode::deserialize(bytes_for_r.as_ref());
-    // create a new zkp with r and S for formation of participant
+    // create a new Nizk of Secret Keys  with r and S for formation of participant
+    // This Nizk is a ZKP which allows other parties to verify that the particpant is holder of private key / Secret Vector and 
+    // susequently verfied Participant
     let mut zkpfull :frost_secp256k1::nizk::NizkOfSecretKey= frost_secp256k1::nizk::NizkOfSecretKey { s: skey.unwrap(), r: rkey.unwrap() };
+    // Counter of Commitment so to loop through all 7 commitments
     
     let mut commit=0;
+    // Starting size is 80 for commitment shares with 40 bytes for R and 40 bytes for S
     let mut start_bytes=80;
-    // loop through commitment of  33 bytes to get all commitment vectors
+    
+    
+        // Counter of Commitment so to loop through all 7 commitments of size 3 3bytes
+
     while(commit<7)
     {
         let endvalue=start_bytes+33;
+        // Each commitment is of 33 bytes which is actually a projective point with two scalers . 
         let mut bytescommit:[u8;33]=[0;33];
+
         
         
-       
+       // 33 bytes for creating a commitment for Commitment vector in Participant 
         bytescommit.copy_from_slice(&party_bytes[start_bytes..endvalue]);
+
         let mut genarray=GenericArray::from_slice(bytescommit.as_ref());
-       
+       // Create a Projective point from bytes with z [1,0,0,0,0]
         let mut byte_projective=k256::ProjectivePoint::from_bytes(&genarray).unwrap(); 
-               
+        // Push the prepared projective point on commitment vector 
         commit_vector.push(byte_projective);
 
         start_bytes=endvalue;
         commit=commit+1;
 
     }
-    
-        let mut party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
+    // Create a new participant with index, commitment vector and proof of secret key  from bytes 
+        let  party_convert: Participant=Participant { index: index_u32_integer , commitments: commit_vector, proof_of_secret_key: zkpfull };
 
 
 party_convert
 }
 
+    //function to convert  participant with R and S converted without bincode
+    // fails to convert back due to no direct constructor available to create Scalers from bytes
 
     fn convert_party_to_bytes2(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;299]{
 
@@ -1205,6 +1229,7 @@ party_convert
         resultbytes
     }
 
+    // Testing code for 3 parties configuartion of frost as 2/3
     fn convert_party3_to_bytes(index: &u32, commitments_party: &frost_secp256k1::Participant,zkp:&frost_secp256k1::nizk::NizkOfSecretKey) -> [u8;150]{
 
         let mut resultbytes:[u8;150]=[0;150];
