@@ -142,7 +142,7 @@ fn main() {
     let mut pathfile = String::from("/opt/datafrost/") + lines[0].to_string().trim() + "/";
     let _res=fs::create_dir(&pathfile);
     let mut publickeytofile = pathfile + "public" + &lines[0].to_string() + ".txt";
-    fs::remove_file(&publickeytofile).expect("could not remove file");
+    //fs::remove_file(&publickeytofile).expect("could not remove file");
     let mut data_file = File::create(publickeytofile).expect("creation failed");
 
     // Create Participant using parameters
@@ -1342,7 +1342,7 @@ pub struct PublicCommitShareListformain {
     pub commitments: Vec<(AffinePoint, AffinePoint)>,
 }
 
-/
+
 fn public_commitment_to_bytes(publiccomitmentsharelist:&PublicCommitmentShareList )->[u8;70] 
 {
     // Struct 33 +33 +4 =70bytes
