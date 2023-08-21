@@ -150,504 +150,43 @@ fn main() {
     // Create Participant using parameters
     let params = Parameters { n: totalvalue, t:threholdvalue };
     let   (mut party, _partycoeffs) = Participant::new(&params, id);
-    //Convert Public key to bytes
+    //_partycoeffs are never to shared as these act as the private key for participant in 
+    // forwarding the Distributed keygeneration algorith 
+    //Convert Public key to bytes for writting and distrbution.
         let public_bytes =party.public_key().unwrap().to_bytes();
         let _file_write_result=data_file.write_all(&public_bytes);
+        // Create public key file in the designated folder
         let mut public_key_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public" + id.to_string().trim()+ ".txt";
-        let mut file = match File::open(&public_key_filepath) {
-            Ok(file) => file,
+        
+        let mut public_file = match File::open(&public_key_filepath) {
+            Ok(public_file) => public_file,
             Err(_) => panic!("no such file"),
         };
-        //let mut bufferfile :[u8;65]=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4];
+        
         let mut bufferfile: [u8;33]=[0;33];
-          let _ = file.read_exact( &mut bufferfile);
-        
-          let testing3bytes=false;
-
-    // Testing code with 3 Parties 
-          if testing3bytes==true
-    {
-      // write code for 3 party testing
-      
-      let bytes_committed=convert_party3_to_bytes(&id, &party, &party.proof_of_secret_key);
-      let partyconv=convert_bytes_to_party3(&bytes_committed);
-      party.clone_from(&partyconv);
-      // Clone to convert Z to zero in the original Party 
-
-        
-      let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
-     
-      println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-      fs::remove_file(&participantvectorpath).expect("could not remove file");
-      let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
-      let result_file_write=data_filecommit.write_all(&bytes_committed);
-      
-      
-      let _=std::io::stdin().read_line(&mut name);
-      let mut  other_Party_vectors: Vec<Participant>= vec!();
-      let mut counter_party=1;
-     // other_Party_vectors.clear();
-      while (counter_party<4)
-      {
-          
-          if counter_party==id
-          {
-              println!("Do nothing for self file creation");
-          }
-          else 
-                          
-          {
-              let  path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
-              let mut file = match File::open(&path_to_read_party_vector) {
-                  Ok(file) => file,
-                  Err(_) => panic!("no such file"),
-              };
-             // println!("{:?}",path_to_read_party_vector);
-              let mut result_bytes_from_file:[u8;150]=[0;150];
-              let result_read=file.read_exact(&mut result_bytes_from_file);
-
-              //if result_read.is_ok()
-              {
-                  let mut party_input=convert_bytes_to_party3(&result_bytes_from_file);
-                  
-                  //println!("Value of Party vector {}",12-counter_party);
-
-                  if party_input.index==party.index
-                  {
-                      println!("Dont push self key {} to Other party vector ",party_input.index)
-                  }
-                  else
-                  {
-                      println!("             ",);
-                      println!("{:?}",party_input);
-                       other_Party_vectors.push(party_input);
-                  
-                  
-                  }
-                
-              }
-
-              
-          }
-          counter_party=counter_party+1;
-
-      }
-      println!("{}",other_Party_vectors.len());
-      println!("{}",counter_party);
-      println!("waiting for DKG round 1");
-      let _= std::io::stdin().read_line(&mut name);
-
-
-     // Go For DKG Part-1
-
-      //DKG first Part  Round One 
-      
-      
-      let mut partystate=DistributedKeyGeneration::<_>::new(&params,&id,&_partycoeffs,&mut other_Party_vectors).or(Err(())).unwrap();
-
-      let mut partyone_secrets: &Vec<SecretShare>=partystate.their_secret_shares().unwrap();
-
-      // println!("Secrets Vector Done for Id {} ",id);
-      let total_secret_shares=partyone_secrets.len();
-       println!("{:?}",partyone_secrets);
-       println!("{:?}",partyone_secrets.len());
-     
-       let fullparty: [u8; 88]=convert_secret_to_3bytes(partyone_secrets);
-
-       let mut secret_share_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/party_secrets" + id.to_string().trim()+ ".txt";
-       fs::remove_file(&secret_share_filepath).expect("could not remove file");
-       let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
-       let result=secret_file.write_all(&fullparty);
-
-       println!("Checking all files are written with party scecrets");
-       let _= std::io::stdin().read_line(&mut name);
-       
-
-          // Start loop for retreiving secrets from all personnel
-          // read all secret file vectors from other parties and select all secret shares with own id 
-          let mut other_party_secret_shares: Vec<SecretShare>=vec!();
-          let mut  file_nos=1;
-          while file_nos<4
-          {
-          if file_nos==id
-          {
-              // no need to scan own file for own secret shares
-              println!("no need to scan own file for own secret shares");
-          }
-          else {
-          
-          
-           let mut secret_share_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/party_secrets" + file_nos.to_string().trim()+ ".txt";
-           let mut file = match File::open(&secret_share_filepath) {
-               Ok(file) => file,
-               Err(_) => panic!("no such file"),
-              };
-
-          let mut secret_bytes : [u8;88]=[0;88];
-          file.read_exact(&mut secret_bytes);
-          let mut shared_vector=convert_bytes_to_3secret(secret_bytes);
-          // find shares belonging to self from file 
-          let mut vari_count=0;
-          while (vari_count<shared_vector.len()+1)
-          {
-              if shared_vector[vari_count].index==id
-              {println!("going through this file for self vector {}",secret_share_filepath);
-                  other_party_secret_shares.push(shared_vector[vari_count].clone());
-                  
-                  break;
-              }
-              vari_count=vari_count+1;
-
-          }
-
-
-              } // else 
-              file_nos=file_nos+1;
-              
-          } // while reading all files
-
-         
-          let  partystate2: DistributedKeyGeneration<keygen::RoundOne>=partystate.clone();
-      
-          let  partystaternd2: Result<DistributedKeyGeneration<keygen::RoundTwo>, ()> = partystate2.clone().to_round_two( other_party_secret_shares);
-          
-          let partystaternd2: DistributedKeyGeneration<keygen::RoundTwo>=partystaternd2.unwrap();
-  
-          let mut partyfinale=partystaternd2.finish(&party.public_key().unwrap()).unwrap();
-          
-                   println!("Groupkey");
-           println!("{:?}",partyfinale.0);
-           
-   
-            println!("Secret key full ");
-             println!("{:?}",&mut partyfinale.1);
-           // println!("{:?}",&mut blabblabbalb.1);
-            println!("Public key from Private key ");
-            println!("{:?}",&mut partyfinale.1.to_public());
-            
-            println!("Groupkey bytes");
-            println!("{:?}",partyfinale.0.to_bytes()); 
-            println!("Secret key bytes ");
-            println!("{:?}",partyfinale.1.key.to_bytes());
-            println!("Public key bytes ");
-            println!("{:?}",partyfinale.1.to_public().share.to_bytes());
-            let custom=partyfinale.1.to_public();
-          println!("Group key with all other keys formed necesary for TSS. Going for Threshold signature ");
-          println!("Theshold Signature Step-0");
-            // Move to Partial Signature Creation 
-            // Assign Party 1 as leader 
-            //
-            let context = b"CONTEXT STRING FOR XP NFT BRIDGE TEST FOR APPLE>D>HAIDER>SMITH";
-            let message = b"This is a test message from Xp Bridge piece Meal 20230815";
-
-            if id==1
-            {
-
-                    // do some special work if id ==1 
-                let (mut agg_Party_commshare, mut agg_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
-               // let signerres=aggregator.get_signers();
-               println!("Inside agregator loop  ");       
-               println!("Theshold Signature Step-1 : Creating Signature Aggregator with context, message, params and group key ");
-                let mut aggregator=SignatureAggregator::new(params,partyfinale.0,context.to_vec(),message.to_vec());
-                
-                
-                let bytesoff: [u8; 70] =public_commitment_to_bytes(&agg_Party_commshare);
-
-
-                // write commitment share and public key in files
-                let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
-              //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
-                println!("{}",public_comshare_filepath);
-                let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
-                let result=secret_file.write_all(&bytesoff);
-                
-                let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
-              //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
-                println!("{}",public_keyshare_filepath);
-                let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
-                
-                let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
-                println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
-                let _= std::io::stdin().read_line(&mut name);
-                //PublicKey::from_sec1_bytes(bytes)
-                //partyfinale.1.to_public().share.to_bytes()
-                let  final_GroupKey: GroupKey= partyfinale.0;
-                let  partynew=partyfinale;
-               
-                let message_hash = compute_message_hash(&context[..], &message[..]);
-              //  let signers = aggregator.get_signers();
-                
-                // loop through all other files for commitment and public key 
-                let mut count=2;
-                while count <4
-                {
-                    let mut public_comshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_comshares" + count.to_string().trim()+ ".txt";
-                    let mut bytespublicexact: [u8; 70]=[0;70];
-                    let mut file_pub = match File::open(&public_comshare_filepath) {
-                        Ok(file_pub) => file_pub,
-                        Err(_) => panic!("no such file"),
-                       };
-                     file_pub.read_exact(&mut bytespublicexact);
-                     println!("Theshold Signature Step-5 : Reading Public Comm share to create Signer Vector  ");
-                     println!("Reading Public Comm share for Party id {}",count);
-                               
-                    let comms=public_bytes_to_commitment(bytespublicexact);
-                   
-                    let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/public_final_key" + count.to_string().trim()+ ".txt";
-                    let mut bytespublickey: [u8; 33]=[0;33];
-                    let mut file_pubkey = match File::open(&public_keyshare_filepath) {
-                        Ok(file_pubkey) => file_pubkey,
-                        Err(_) => panic!("no such file"),
-                       };
-                     file_pubkey.read_exact(&mut bytespublickey);
-
-                       println!("{:?}",bytespublickey);
-                     let mut genarraypublic=GenericArray::from_slice(&bytespublickey);
-                     println!("{:?}",genarraypublic);
-
-                     let pk_sk_affinepoint=AffinePoint::from_bytes(genarraypublic);
-                     let pk_sk_affinepoint=pk_sk_affinepoint.unwrap();
-                     partynew.1.to_public().share.clone_from(&pk_sk_affinepoint);
-
-                      let publickey_party_count=PublicKey::from_affine(pk_sk_affinepoint).unwrap();
-                    
-                    let alpha : IndividualPublicKey=IndividualPublicKey { index: count, share: pk_sk_affinepoint };
-                    let xyz=PublicKey::from_affine(pk_sk_affinepoint);
-                    let xyz= xyz.unwrap();
-
-                aggregator.include_signer(count, comms.commitments[0],alpha);     
-                     count=count+1;
-
-                }
-
-                  let signers: &Vec<frost_secp256k1::signature::Signer> = aggregator.get_signers();
-                println!("{:?}",signers);
-                let bytessamoke=signer_vector_tobytes(signers, 0);
-                println!("{:?}",bytessamoke);
-                println!("{:?}",signer_bytes_tovector(bytessamoke));
-                let mut signer_140_file = String::from("/opt/datafrost/")+ "signer_vector_140" + ".txt";
-                //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
-                  //println!("{}",public_keyshare_filepath);
-                  let mut signer_file_writer = File::create(&signer_140_file).expect("creation failed");
-                    signer_file_writer.write_all(&bytessamoke);
-                    println!("signer bytes written ");
-                    println!( "go ahead on signers for writing Partial signatures aggreagotr party ");
-                    println!( "Waiting for all other parties to write TSS ");
-                    println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
-                             let _= std::io::stdin().read_line(&mut name);
-
-                             let mut partial1: [u8; 44]=[0;44];
-                                let mut count=2;      
-                             let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
-                             
-                    let mut tss_signer = match File::open(&public_tss) {
-                        Ok(tss_signer) => tss_signer,
-                        Err(_) => panic!("no such file"),
-                       };
-                       tss_signer.read_exact(&mut partial1);
-
-                       println!( " Theshold Signature Step-9.1: read Partial sig from file for 1st signer and converted backfrom bytes");
-                       // create partial sign
-                       let partial_sign1=partialsig_from_bytes(partial1);// create partial sign
-                       println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
-                       // get Tss 3
-                       count=3;
-                       let mut partial2: [u8; 44]=[0;44];
-                       let mut public_tss = String::from("/opt/datafrost/")+ count.to_string().trim()  + "/tss" + count.to_string().trim()+ ".txt";
-                       
-                             
-                       let mut tss_signer = match File::open(&public_tss) {
-                           Ok(tss_signer) => tss_signer,
-                           Err(_) => panic!("no such file"),
-                          };
-                          tss_signer.read_exact(&mut partial2);
-                          
-                          
-                          println!( " Theshold Signature Step-9.2: read Partial sig from file for 1st signer and converted backfrom bytes");
-                       
-                       // create partial sign
-                          let partial_sign2=partialsig_from_bytes(partial2);
-                          println!("Tss for index id {} is  {:?}",partial_sign1.index,partial_sign1.z);
-                          
-                          
-                        
-                        // tss to agregator 
-                        println!( " Theshold Signature Step-10: Aggregating signers");
-                        println!("at aggregator function wih TSS");
-                        let _= std::io::stdin().read_line(&mut name);
-                          println!("{:?}",aggregator.get_signers());
-                          aggregator.include_partial_signature(partial_sign1);
-                          aggregator.include_partial_signature(partial_sign2);
-
-
-                          let aggregator_finalized = aggregator.finalize().unwrap();
-                          println!("at aggregator function wih TSS unwrap");
-                          println!( " Theshold Signature Step-11: Aggregating Finalizing");
-            let  threshold_signature_final: Result<frost_secp256k1::ThresholdSignature, std::collections::HashMap<u32, &str>>  = aggregator_finalized.aggregate();
-
-            println!("");
-            println!("Theshold Signature Step 12 .  wih TSS unwrap");
-            if threshold_signature_final.is_ok()
-            {
-                //threshold_signature=threshold_signature.unwrap();
-                println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
-                println!("Threshold okay");
-
-            }
-            
-            println!("Group key {:?}",final_GroupKey);
-            println!("Group key for party new {:?}", partynew.0);
-            
-            let verification_result = threshold_signature_final.unwrap().verify(&final_GroupKey
-                , &message_hash);
-            println!("Theshold Signature Step 13 at verification.  wih TSS unwrap");
-            if verification_result.is_ok()
-            {
-                //println!("{:?}",threshold_signature_final.as_ref().unwrap().to_bytes());
-                println!("TSS signature verified for message hash {:?}",message_hash);
-            }
-
-            }
-            else {
-                // for 2/3 other parties
-                let (mut other_Party_commshare, mut other_party_secret_comm_share) = generate_commitment_share_lists(&mut OsRng, id, 1);
-                //let (any_public_comshares, mut any_secret_comshares) = generate_commitment_share_lists(&mut OsRng, id, 1);
-                // write commitment share and public key in files
-
-                println!("Theshold Signature Step-3 : Generating Commitment shares for one time use ");
-                let message_hash = compute_message_hash(&context[..], &message[..]);
-             //   let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut other_party_secret_comm_share,0,&signers).unwrap();
-                 let mut public_comshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_comshares" + id.to_string().trim()+ ".txt";
-             
-               println!("{}",public_comshare_filepath);
-               let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
-               let bytesoff: [u8; 70] =public_commitment_to_bytes(&other_Party_commshare);
-               let result=secret_file.write_all(&bytesoff);
-               
-               let mut public_keyshare_filepath = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/public_final_key" + id.to_string().trim()+ ".txt";
-             
-               println!("{}",public_keyshare_filepath);
-               let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
-               
-               let result=secret_file.write_all(&partyfinale.1.to_public().share.to_bytes());
-               
-               println!( "Public shares Written with Comm shares.  ");
-               println!("Theshold Signature Step-4 : Commitment shares written for use by Aggregator ");
-               println!( "Waiting for Aggreagator GO Ahead to send signer vector  ");
-                        let _= std::io::stdin().read_line(&mut name);
-
-               //read signers vector from file 
-               let mut signer_140_file = String::from("/opt/datafrost/")+ "signer_vector_140" + ".txt";
-               let mut signer_140_bytes: [u8; 140]=[0;140];
-                    let mut file_signer = match File::open(&signer_140_file) {
-                        Ok(file_signer) => file_signer,
-                        Err(_) => panic!("no such file"),
-                       };
-                       file_signer.read_exact(&mut signer_140_bytes);
-                       println!( " Theshold Signature Step-7: Retreived Signer 140 bytes to create TSS ");
-                       
-                       let signer_140_from_file=signer_bytes_tovector(signer_140_bytes);
-               let party_partial = partyfinale.1.sign(&message_hash, &partyfinale.0,&mut other_party_secret_comm_share,0,&signer_140_from_file).unwrap();
-                       println!("{:?}",signer_140_from_file);
-                       println!("{:?}", party_partial);
-                       let output: [u8; 44]=partialsig_to_bytes(party_partial);
-                       let newtss=partialsig_from_bytes(output);
-                       println!("writign partial signature to file ",);
-
-                       let mut public_tss = String::from("/opt/datafrost/")+ id.to_string().trim()  + "/tss" + id.to_string().trim()+ ".txt";
-                       //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
-                         println!("{}",public_tss);
-                         let mut tss_file = File::create(&public_tss).expect("creation failed");
-                         let result=tss_file.write_all(&output);
-                         println!( " Theshold Signature Step-8: Created Tss for Party  id {} ", id);
-                         println!( "Work for Party id {}  completed  ", id);
-
-                       let _= std::io::stdin().read_line(&mut name);
-                       let _= std::io::stdin().read_line(&mut name);
-                       //let newtss=partialsig_from_bytes(output);
-                       //println!("{:?}", newtss);
-                       
-                       
-                
-            }
-      
-              
-    }
-          else {
-            // full party 440 
-            /*
-            Full mode 11       
-            ________________
-            /.,------------,.\
-            ///  .=^^^^^^^\__|\\
-            \\\   `------.   .//
-            `\\`--...._  `;//'
-            `\\.-,___;.//'
-                `\\-..-//'
-            ZKP    `\\//'
-                    ""
-
-            */
+          let _ = public_file.read_exact( &mut bufferfile);
+             // Convert Self Participant  Party to bytes to write to file 
+            // These 315 bytes will be shared between all parties.
         let bytes_committed=convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
       
-         let mut participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
+         let participantvectorpath = String::from("/opt/datafrost/") +&lines[0].to_string()+ "/participantvector" + &lines[0].to_string() + ".txt";
             println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-    //         let _= std::io::stdin().read_line(&mut name);
+    
             fs::remove_file(&participantvectorpath).expect("could not remove file");
          let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
          let result_file_write=data_filecommit.write_all(&bytes_committed);
                 // Convert original party to 32 bytes party with z value zero 
          let partyconv=convert_bytes_to_party(&bytes_committed);
+         // The original Public key and Project points contains z which is now converted to [1 0 0 0 0]
+         // Cloning original party from converted party to avoid error in group key later. 
+         // doing it for all parties so that all parties have their Z converted so it doesnt count in rest of calculations
          party.clone_from(&partyconv);
     
-    // Create all files for computation if filler = ture
-        let mut filler =false;
-        let mut file_nos=1;
-        // testing filling files with comm share
-       while file_nos<12 && filler== true
-       {
-           if file_nos==id
-           {
-
-           }
-           else {
-               
-           
-           let mut pathfile = String::from("/opt/datafrost/") + &file_nos.to_string().trim() + "/";
-           let _res=fs::create_dir(&pathfile);
-           let mut publickeytofile = pathfile + "public" + &file_nos.to_string() + ".txt";
-           let mut data_file = File::create(publickeytofile).expect("creation failed");
-       
-           // Create Participant using parameters
-           let params = Parameters { n: totalvalue, t:threholdvalue };
-           let (party_to_write, _partycoeffs) = Participant::new(&params, file_nos);
-           //Convert Public key to bytes
-               let public_bytes =party_to_write.public_key().unwrap().to_bytes();
-               let _file_write_result=data_file.write_all(&public_bytes);
-               let mut public_key_filepath = String::from("/opt/datafrost/")+ file_nos.to_string().trim()  + "/public" + file_nos.to_string().trim()+ ".txt";
-               let mut file = match File::open(&public_key_filepath) {
-                   Ok(file) => file,
-                   Err(_) => panic!("no such file"),
-               };
-               let bytes_committed=convert_party_to_bytes(&file_nos, &party_to_write, &party_to_write.proof_of_secret_key);
-
-                    
-                let mut participantvectorpath = String::from("/opt/datafrost/") +&file_nos.to_string()+ "/participantvector" + &file_nos.to_string() + ".txt";
-               
-                println!("Verify the Participantvectorbinary file at {}",&participantvectorpath);
-                //std::io::stdin().read_line(&mut name);
-             
-                let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing 
-                let result_file_write=data_filecommit.write_all(&bytes_committed);
-
-           }
-           file_nos=file_nos+1;
-       }// Files Creation Loop ends
-
-
-        //let partyglobal=convert_bytes_to_party(&bytes_committed);
                  std::io::stdin().read_line(&mut name);
+        // Create a party vector to store all other participant vectors . Since id's of Participant 
+        // start from 1 
         let mut  other_Party_vectors: Vec<Participant>= vec!();
+        
         let mut counter_party=1;
        // other_Party_vectors.clear();
        // Get shares from all party vectors 
@@ -656,25 +195,24 @@ fn main() {
           
             if counter_party==id
             {
-                println!("Do nothing for self file creation");
+                // if this loop counter is equal to own id , Dont have to store it in other participant vectors
+                println!("Do nothing for self Participant vector ");
             }
             else 
-                            
+            
             {
                 let  path_to_read_party_vector = String::from("/opt/datafrost/") +&counter_party.to_string()+ "/participantvector" + &counter_party.to_string() + ".txt";
-                let mut file = match File::open(&path_to_read_party_vector) {
-                    Ok(file) => file,
+                let mut party_file = match File::open(&path_to_read_party_vector) {
+                    Ok(party_file) => party_file,
                     Err(_) => panic!("no such file"),
                 };
                // println!("{:?}",path_to_read_party_vector);
                 let mut result_bytes_from_file:[u8;315]=[0;315];
-                let result_read=file.read_exact(&mut result_bytes_from_file);
+                let _=party_file.read_exact(&mut result_bytes_from_file);
 
-                //if result_read.is_ok()
-                {
+                    // create Participant vector from file for use 
                     let mut party_input=convert_bytes_to_party(&result_bytes_from_file);
-                    
-                    //println!("Value of Party vector {}",12-counter_party);
+                
 
                     if party_input.index==party.index
                     {
@@ -682,20 +220,15 @@ fn main() {
                     }
                     else
                     {
-                        //println!("             ",);
-                        //println!("{:?}",party_input);
+                        // push only those participant vectors which have index not equal to own id
                          other_Party_vectors.push(party_input);
-                    
-                    
+                                       
                     }
-                  
+                 
                 }
-
-                
+                counter_party=counter_party+1;    
             }
-            counter_party=counter_party+1;
-
-        }
+        
         
         std::io::stdin().read_line(&mut name);
 
@@ -1040,7 +573,7 @@ fn main() {
                 //println!("{:?}", newtss);
      }
 
-}//close the keygen
+//close the keygen
 
 
 // Function to convert Participant vector to bytes which contains , 
