@@ -9,32 +9,18 @@ use core::cmp::Ordering;
 use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use frost_secp256k1::DistributedKeyGeneration;
-use frost_secp256k1::GroupKey;
-use frost_secp256k1::IndividualPublicKey;
-use frost_secp256k1::IndividualSecretKey;
-use frost_secp256k1::SignatureAggregator;
-use frost_secp256k1::compute_message_hash;
+use frost_secp256k1::{Participant,Parameters,DistributedKeyGeneration,GroupKey,
+    IndividualPublicKey,IndividualSecretKey,SignatureAggregator,compute_message_hash,
+    precomputation::{CommitmentShare,PublicCommitmentShareList},
+    signature::{Aggregator,PartialThresholdSignature,Signer},keygen::{SecretShare}
+};
 use frost_secp256k1::keygen;
-use frost_secp256k1::keygen::SecretShare;
-use frost_secp256k1::precomputation::CommitmentShare;
-use frost_secp256k1::precomputation::PublicCommitmentShareList;
-use frost_secp256k1::signature::Aggregator;
-use frost_secp256k1::signature::PartialThresholdSignature;
-use frost_secp256k1::signature::Signer;
-use k256::AffinePoint;
-use k256::PublicKey;
 use frost_secp256k1;
-use frost_secp256k1::Participant;
+use k256::{AffinePoint,PublicKey,Scalar,Secp256k1,SecretKey,
+    elliptic_curve::{ScalarArithmetic,group::{GroupEncoding}
+    }
+};
 
-use frost_secp256k1::Parameters;
-use k256::Scalar;
-use k256::Secp256k1;
-use k256::SecretKey;
-//use k256::elliptic_curve::PublicKey;
-//use k256::elliptic_curve::PublicKey;
-use k256::elliptic_curve::ScalarArithmetic;
-use k256::elliptic_curve::group::GroupEncoding;
 use rand::rngs::OsRng;
 use rand::seq::index;
 use sec1::point;
@@ -45,7 +31,7 @@ use std::io::Write;
 use serde;
 use std::convert::TryInto;
 use k256::ecdsa::Signature;
-//use k256::ecdsa::signature::Signer;
+
 use core::convert::TryFrom;
 use generic_array::GenericArray;
 use generic_array::typenum::Unsigned;
@@ -53,12 +39,12 @@ use crate::frost_secp256k1::generate_commitment_share_lists;
 //Comvert the contents of a file into a vector of string to mimic read lines one by one 
 //
 fn lines_from_file(filename: &str) -> Vec<String> {
-    let mut file = match File::open(filename) {
-        Ok(file) => file,
+    let mut inputfile = match File::open(filename) {
+        Ok(inputfile) => inputfile,
         Err(_) => panic!("no such file"),
     };
     let mut file_contents = String::new();
-    file.read_to_string(&mut file_contents)
+    inputfile.read_to_string(&mut file_contents)
         .ok()
         .expect("failed to read!");
     let lines: Vec<String> = file_contents
@@ -68,20 +54,33 @@ fn lines_from_file(filename: &str) -> Vec<String> {
     lines
 }
 // The secret Vector of  particpant to be converted to bytes 
+// These secrets are to be shared with other parties . 
+// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+// and create a Vector of secret shares with all secret shares from all parties destined for self
+//In configuration of 11 Parties, each party will get 10 SecretShares
+// Size of one SecretShare is 44 bytes . so total size would be 440
+
 fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
 {
-    //Structure of Secretbytes 
-    // every secret share is 44 bytes long 
-    // loop through all bytes 
+    //Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
+    // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we 
+    // serialize it with bincode instead of using to bytes function which return the sec bytes
+    // and adding index manually
+    // every secret share is 44 bytes long s
+
     let total=secretvector.len();
     let mut count=0;
     let mut secretbytes: [u8;440]=[0;440];
     let mut startindex=0;
     let mut endindex=0;
+    
+    // loop through all bytes and calculating the size of next location
+    //  by getting the length and adding it in the start index
+
     while count<total
     {   
         let writebytes: Vec<u8>=bincode::serialize(&secretvector[count]).unwrap();
-       // convert secret vector[count] to bytes
+       // convert secret vector[count] to bytes using bincode instead of to bytes function
         let size: usize =writebytes.len();
         endindex=endindex+size;
         secretbytes[startindex..endindex].copy_from_slice(writebytes.as_slice());
@@ -92,26 +91,40 @@ fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>)->[u8;440]
     secretbytes
 }
 
+// Cinverting Bytes back to secret Vector of  particpant 
+// These secrets are to be shared with other parties. 
+// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+// and create a Vector of secret shares with all secret shares from all parties destined for self
+//In configuration of 11 Parties, each party will get 10 SecretShares
+// Every Secret share is a vector contaning 10 Secrete shares in the configuration of 11 parties
 fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
 {
-    //Structure of Secretbytes 
-    // every secret share is 44 bytes long 
-    // loop through all bytes 
+    //Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
+    // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we 
+    // DEserialize it with bincode which return the secret SHare 
+    // and pushing it to the Secret vector 
+       
     let mut secret_vector_from_bytes :Vec<SecretShare>=vec![];
     
      let mut startindex=0;
      let mut endindex=44;
-     let mut total=11;
+     let total=11;
      let mut count=1;
      while count<total
     {   
         let mut bytesvalues: [u8;44]=[0;44];
+        // Initialize 44 bytes to zero and copy from the input from start index to end index 
+        // which will be looping through starting from [0..44]
         bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
+        // Create a clone secret share by deserializing it using bincode
         let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>>=bincode::deserialize(&bytesvalues);
+        // unwrap the secretshare and push it on the secretvector to be returned.
+        //for a party of 11 the vector will have a size of 10. 
         secret_vector_from_bytes.push(clone_secret_share.unwrap());
-                count=count+1;
+         // swap the end index with start index and increade endindex by 44       
          startindex=endindex;
          endindex=endindex+44;
+         count=count+1;
 
     }  
     secret_vector_from_bytes
@@ -119,10 +132,6 @@ fn convert_bytes_to_secret(secretbytes:[u8;440] )->Vec<SecretShare>
 }
 
 
-
-
-
-//Line 110 for Main 
 fn main() {
 
     let mut name = String::new();
@@ -855,10 +864,7 @@ fn signer_vector_ten_tobytes(signers: &Vec<frost_secp256k1::signature::Signer>, 
     //33..66 second share 
     //66.70 index
     // loop through 
-    // Convert  affine points and index to 70 bytes 
-    // returnbytes[0..33].copy_from_slice(&bytes1);
- //   returnbytes[33..66].copy_from_slice(&bytes2);
-   // returnbytes[66..70].copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+
  
     let mut index=indexsign;
     let mut returnbytes: [u8;700]=[0;700];
