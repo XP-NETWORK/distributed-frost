@@ -13,6 +13,7 @@ use frost_secp256k1::{
     DistributedKeyGeneration, GroupKey, IndividualPublicKey, IndividualSecretKey, Parameters,
     Participant, SignatureAggregator,
 };
+use generic_array::typenum::private::IsEqualPrivate;
 use k256::{
     ecdsa::Signature,
     elliptic_curve::{group::GroupEncoding, ScalarArithmetic},
@@ -357,7 +358,7 @@ fn main() {
     println!("{:?}", &mut partyfinale.1.to_public());
 
     println!("Groupkey bytes");
-    println!("{:?}", partyfinale.0.to_bytes());
+    println!("{:?}", partyfinale.0.to_bytes().len());
     println!("Secret key bytes ");
     println!("{:?}", partyfinale.1.key.to_bytes());
     println!("Public key bytes ");
@@ -367,6 +368,83 @@ fn main() {
     // all parties that group key is same
     // if group key is not same , re- run the algorithm
     // await
+    let final_public_write_bytes: [u8; 37] = final_public_key_to_bytes(partyfinale.1.to_public());
+    //let final_group_key_bytes=
+    let public_keyshare_filepath = String::from("/opt/datafrost/")
+        + id.to_string().trim()
+        + "/public_final_key"
+        + id.to_string().trim()
+        + ".txt";
+
+    let mut public_key_final_file =
+        File::create(&public_keyshare_filepath).expect("creation failed");
+    let _result = public_key_final_file.write_all(&final_public_write_bytes);
+
+    let final_gkey_final_bytes: [u8; 33] = final_group_key_to_bytes(partyfinale.0);
+    let group_filepath = String::from("/opt/datafrost/")
+        + id.to_string().trim()
+        + "/Group_final_key"
+        + id.to_string().trim()
+        + ".txt";
+    let mut group_key_final_file = File::create(&group_filepath).expect("creation failed");
+    let _ = group_key_final_file.write_all(&final_gkey_final_bytes);
+    println!("wait here after group key write . move forward for id 1 only");
+    let _ = std::io::stdin().read_line(&mut name);
+
+    // let mut public_file_file = match File::open(&public_keyshare_filepath) {
+    //     Ok(public_file_file) => public_file_file,
+    //     Err(_) => panic!("no such file"),
+    // };
+    // let mut pubicvalue_bytes: [u8; 37] = [0; 37];
+    // let _ = public_file_file.read_exact(&mut pubicvalue_bytes);
+    // let pkey = final_bytes_to_public_key(pubicvalue_bytes);
+
+    // let final_gkey_final_bytes: [u8; 33] = final_group_key_to_bytes(partyfinale.0);
+    // let group_filepath = String::from("/opt/datafrost/")
+    //     + id.to_string().trim()
+    //     + "/Group_final_key"
+    //     + id.to_string().trim()
+    //     + ".txt";
+    // let mut group_key_final_file = File::create(&group_filepath).expect("creation failed");
+    // let _ = group_key_final_file.write_all(&final_gkey_final_bytes);
+
+    //     let final_gkey=final_bytes_to_group_key_(final_gkey_final_bytes);
+
+    if (id == 1) {
+        // Read  all Group key files for assertion
+        let mut group_key_vec: Vec<GroupKey> = vec![];
+        // push self gkey on Vector
+        group_key_vec.push(partyfinale.0);
+        let mut count = 12;
+        let mut index_gkey = 2;
+        while index_gkey < count {
+            let group_filepath = String::from("/opt/datafrost/")
+                + index_gkey.to_string().trim()
+                + "/Group_final_key"
+                + index_gkey.to_string().trim()
+                + ".txt";
+            let mut final_gkey_final_bytes_read: [u8; 33] = [0; 33];
+            let mut gkey_reader = match File::open(&group_filepath) {
+                Ok(gkey_reader) => gkey_reader,
+                Err(_) => panic!("no such file"),
+            };
+            let _ = gkey_reader.read_exact(&mut final_gkey_final_bytes_read);
+            let rec_gkey = final_bytes_to_group_key_(final_gkey_final_bytes_read);
+            group_key_vec.push(rec_gkey);
+            index_gkey = index_gkey + 1;
+        }
+        index_gkey = 0;
+        //GroupKey.is_equal_private(_, _)
+        count = group_key_vec.len();
+        while index_gkey < count {
+            if (partyfinale.0.to_bytes() != group_key_vec[index_gkey].to_bytes()) {
+                println!("Mismatch between Group Key of party {}", index_gkey + 1);
+            } else {
+                println!(" Group Key of party {} matched", index_gkey + 1);
+            }
+            index_gkey = index_gkey + 1;
+        }
+    }
 
     let _ = std::io::stdin().read_line(&mut name);
 
@@ -410,17 +488,6 @@ fn main() {
             File::create(&public_comshare_filepath).expect("creation failed");
         let result = public_comm_share_file.write_all(&bytesoff);
 
-        let mut public_keyshare_filepath = String::from("/opt/datafrost/")
-            + id.to_string().trim()
-            + "/public_final_key"
-            + id.to_string().trim()
-            + ".txt";
-        //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
-        println!("{}", public_keyshare_filepath);
-        let mut public_key_final_file =
-            File::create(&public_keyshare_filepath).expect("creation failed");
-
-        let result = public_key_final_file.write_all(&partyfinale.1.to_public().share.to_bytes());
         println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
         let _ = std::io::stdin().read_line(&mut name);
         // wait here for all commitment shares to be written by all parties
@@ -467,7 +534,28 @@ fn main() {
             let _ = file_pubkey.read_exact(&mut bytespublickey);
 
             println!("{:?}", bytespublickey);
-            let mut genarraypublic = GenericArray::from_slice(&bytespublickey);
+            let mut genarraypublic: &GenericArray<
+                u8,
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UInt<
+                                    generic_array::typenum::UInt<
+                                        generic_array::typenum::UTerm,
+                                        generic_array::typenum::B1,
+                                    >,
+                                    generic_array::typenum::B0,
+                                >,
+                                generic_array::typenum::B0,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B1,
+                >,
+            > = GenericArray::from_slice(&bytespublickey);
             println!("{:?}", genarraypublic);
 
             let pk_sk_affinepoint = AffinePoint::from_bytes(genarraypublic);
@@ -791,7 +879,28 @@ fn main() {
             let mut bytescommit: [u8; 33] = [0; 33];
             // 33 bytes for creating a commitment for Commitment vector in Participant
             bytescommit.copy_from_slice(&party_bytes[start_bytes..endvalue]);
-            let mut genarray = GenericArray::from_slice(bytescommit.as_ref());
+            let mut genarray: &GenericArray<
+                u8,
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UInt<
+                                    generic_array::typenum::UInt<
+                                        generic_array::typenum::UTerm,
+                                        generic_array::typenum::B1,
+                                    >,
+                                    generic_array::typenum::B0,
+                                >,
+                                generic_array::typenum::B0,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B1,
+                >,
+            > = GenericArray::from_slice(bytescommit.as_ref());
             // Create a Projective point from bytes with z [1,0,0,0,0]
             let mut byte_projective = k256::ProjectivePoint::from_bytes(&genarray).unwrap();
             // Push the prepared projective point on commitment vector
@@ -859,14 +968,56 @@ fn public_bytes_to_commitment(returnbytes: [u8; 70]) -> PublicCommitmentShareLis
     // which in turn is converted to affine point 1
     let mut affinebytes: [u8; 33] = [0; 33];
     affinebytes.copy_from_slice(&returnbytes[0..33]);
-    let mut genarrya = GenericArray::from_slice(affinebytes.as_ref());
+    let mut genarrya: &GenericArray<
+        u8,
+        generic_array::typenum::UInt<
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UTerm,
+                                generic_array::typenum::B1,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B0,
+            >,
+            generic_array::typenum::B1,
+        >,
+    > = GenericArray::from_slice(affinebytes.as_ref());
     let affine1: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
     // affine point 2 is converted from bytes33..66
     // the constructer of affine point requires generic array of u8 instead of sized array
     // so the converted affine bytes are converted to genarray and
     // which in turn is converted to affine point 2
     affinebytes.copy_from_slice(&returnbytes[33..66]);
-    let mut genarrya = GenericArray::from_slice(affinebytes.as_ref());
+    let mut genarrya: &GenericArray<
+        u8,
+        generic_array::typenum::UInt<
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UTerm,
+                                generic_array::typenum::B1,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B0,
+            >,
+            generic_array::typenum::B1,
+        >,
+    > = GenericArray::from_slice(affinebytes.as_ref());
     let affine2: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
 
     // Commitment share list consists of tuple of affines inside of a vector so a new tuple of two affine
@@ -925,7 +1076,7 @@ fn signer_vector_ten_tobytes(
     signers: &Vec<frost_secp256k1::signature::Signer>,
     indexsign: u32,
 ) -> [u8; 700] {
-   // Each signer Party is made up of 70 bytes . Total 10 signers are used in 7/11 configuration
+    // Each signer Party is made up of 70 bytes . Total 10 signers are used in 7/11 configuration
     //Only ten signers are available as one party takes role of signature aggreagator .
     // Custom bytes structure of Signer Party
     //0..33 first share
@@ -962,7 +1113,7 @@ fn signer_vector_ten_tobytes(
     returnbytes
 }
 fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::signature::Signer> {
-  // Custom bytes
+    // Custom bytes
     //0..33 first share
     //33..66 second share
     //66.70 index
@@ -978,14 +1129,56 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
         let mut affinebytes: [u8; 33] = [0; 33];
         affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
 
-        let genarrya = GenericArray::from_slice(affinebytes.as_ref());
+        let genarrya: &GenericArray<
+            u8,
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UInt<
+                                    generic_array::typenum::UTerm,
+                                    generic_array::typenum::B1,
+                                >,
+                                generic_array::typenum::B0,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B1,
+            >,
+        > = GenericArray::from_slice(affinebytes.as_ref());
         let affine1: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
         startbytes = endbytes;
         endbytes = endbytes + 33;
         let mut affinebytes: [u8; 33] = [0; 33];
 
         affinebytes.copy_from_slice(&signerbytes[startbytes..endbytes]);
-        let genarrya = GenericArray::from_slice(affinebytes.as_ref());
+        let genarrya: &GenericArray<
+            u8,
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UInt<
+                                    generic_array::typenum::UTerm,
+                                    generic_array::typenum::B1,
+                                >,
+                                generic_array::typenum::B0,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B1,
+            >,
+        > = GenericArray::from_slice(affinebytes.as_ref());
         let affine2: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
         startbytes = endbytes;
         endbytes = endbytes + 4;
@@ -1009,5 +1202,86 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
 
     return signervector;
 }
+fn final_public_key_to_bytes(final_public_key: IndividualPublicKey) -> [u8; 37] {
+    let mut returnbytes: [u8; 37] = [0; 37];
+    let index_bytes: [u8; 4] = final_public_key.index.to_be_bytes();
+    let public_bytes = final_public_key.share.to_bytes();
+    returnbytes[0..33].copy_from_slice(&public_bytes);
+    returnbytes[33..37].copy_from_slice(&index_bytes);
 
+    return returnbytes;
+}
+fn final_bytes_to_public_key(final_public_bytes: [u8; 37]) -> IndividualPublicKey {
+    let mut affinex: [u8; 33] = [0; 33];
+    affinex.copy_from_slice(final_public_bytes[0..33].as_ref());
+    let genarray: &GenericArray<
+        u8,
+        generic_array::typenum::UInt<
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UTerm,
+                                generic_array::typenum::B1,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B0,
+            >,
+            generic_array::typenum::B1,
+        >,
+    > = GenericArray::from_slice(affinex.as_ref());
 
+    let shared = AffinePoint::from_bytes(genarray);
+    let mut indexbytes: [u8; 4] = [0; 4];
+    indexbytes.copy_from_slice(&final_public_bytes[33..37]);
+    let indexvalue: u32 = u32::from_be_bytes(indexbytes);
+    let final_public_key: IndividualPublicKey = IndividualPublicKey {
+        index: (indexvalue),
+        share: (shared.unwrap()),
+    };
+
+    return final_public_key;
+}
+fn final_group_key_to_bytes(final_group_key: GroupKey) -> [u8; 33] {
+    let mut returnbytes: [u8; 33] = [0; 33];
+    let bytesvalue = final_group_key.to_bytes();
+    returnbytes[0..33].copy_from_slice(&bytesvalue);
+
+    return returnbytes;
+}
+fn final_bytes_to_group_key_(bytes_groupkey: [u8; 33]) -> GroupKey {
+    let genarray: &GenericArray<
+        u8,
+        generic_array::typenum::UInt<
+            generic_array::typenum::UInt<
+                generic_array::typenum::UInt<
+                    generic_array::typenum::UInt<
+                        generic_array::typenum::UInt<
+                            generic_array::typenum::UInt<
+                                generic_array::typenum::UTerm,
+                                generic_array::typenum::B1,
+                            >,
+                            generic_array::typenum::B0,
+                        >,
+                        generic_array::typenum::B0,
+                    >,
+                    generic_array::typenum::B0,
+                >,
+                generic_array::typenum::B0,
+            >,
+            generic_array::typenum::B1,
+        >,
+    > = GenericArray::from_slice(bytes_groupkey.as_ref());
+    let affine_Gkey = AffinePoint::from_bytes(genarray);
+
+    //let return_groupKey=GroupKey(affine_Gkey);
+    let return_group_key = GroupKey::from_bytes(*genarray);
+
+    return return_group_key.unwrap();
+}
