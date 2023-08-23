@@ -584,7 +584,7 @@ fn main() {
 
         println!("{:?}", signers);
         println!("{:?}", signers.capacity());
-        println!("Stop here for the signer vector ");
+        println!("Stop here for the signer vector Press enter to write vector");
         std::io::stdin().read_line(&mut name);
         let indexsign = 0;
 
@@ -1202,7 +1202,10 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
 
     return signervector;
 }
+// Create Custom bytes for Individual Public key 
+// which is made up of Index of party and affine point 
 fn final_public_key_to_bytes(final_public_key: IndividualPublicKey) -> [u8; 37] {
+    // 4 bytes for Index and 33 bytes for Affine point
     let mut returnbytes: [u8; 37] = [0; 37];
     let index_bytes: [u8; 4] = final_public_key.index.to_be_bytes();
     let public_bytes = final_public_key.share.to_bytes();
@@ -1211,7 +1214,12 @@ fn final_public_key_to_bytes(final_public_key: IndividualPublicKey) -> [u8; 37] 
 
     return returnbytes;
 }
+//convert byte array back to Individual Public Key
 fn final_bytes_to_public_key(final_public_bytes: [u8; 37]) -> IndividualPublicKey {
+    //First 33 bytes  make up affine point .Constructor from 
+    //Sized array is not working so convert sized array to generic array 
+    //and then run constructor of affine point 
+    //
     let mut affinex: [u8; 33] = [0; 33];
     affinex.copy_from_slice(final_public_bytes[0..33].as_ref());
     let genarray: &GenericArray<
