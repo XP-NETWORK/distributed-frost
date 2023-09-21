@@ -5,6 +5,15 @@ use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
 use core::cmp::Ordering;
 use frost_secp256k1;
+// use frost_secp256k1::{
+//     compute_message_hash, generate_commitment_share_lists, keygen,
+//     keygen::SecretShare,
+//     precomputation::{CommitmentShare, PublicCommitmentShareList},
+//     signature::{Aggregator, PartialThresholdSignature, Signer},
+//     DistributedKeyGeneration, GroupKey, IndividualPublicKey, IndividualSecretKey, Parameters,
+//     Participant, SignatureAggregator,
+// };
+
 use frost_secp256k1::{
     compute_message_hash, generate_commitment_share_lists, keygen,
     keygen::SecretShare,
@@ -13,10 +22,11 @@ use frost_secp256k1::{
     DistributedKeyGeneration, GroupKey, IndividualPublicKey, IndividualSecretKey, Parameters,
     Participant, SignatureAggregator,
 };
+
 use generic_array::typenum::private::IsEqualPrivate;
 use k256::{
     ecdsa::Signature,
-    elliptic_curve::{group::GroupEncoding, ScalarArithmetic},
+    elliptic_curve::{group::GroupEncoding },
     AffinePoint, PublicKey, Scalar, Secp256k1, SecretKey,
 };
 
@@ -110,11 +120,11 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
     let mut secret_vector_from_bytes: Vec<SecretShare> = vec![];
 
     let mut startindex = 0;
-    let mut endindex = 44;
+    let mut endindex = 36;
     let mut total = 11;
     let mut count = 1;
     while count < total {
-        let mut bytesvalues: [u8; 44] = [0; 44];
+        let mut bytesvalues: [u8; 36] = [0; 36];
         // Initialize 44 bytes to zero and copy from the input from start index to end index
         // which will be looping through starting from [0..44]
         bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
@@ -128,7 +138,7 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 
         count = count + 1;
         startindex = endindex;
-        endindex = endindex + 44;
+        endindex = endindex + 36;
     }
     secret_vector_from_bytes
 }
@@ -142,10 +152,12 @@ fn main() {
     println!("Kindly enter Current party value");
     let _ = std::io::stdin().read_line(&mut name);
     // read params from file and assign them to id line0, thres line1 and totalvalue line2
-    let lines = lines_from_file("src/params.txt");
+    let lines = lines_from_file("/home/rusty/code/substrate-aura-frost/client/consensus/Frost-secp256Projective/src/params.txt");
     id = lines[0].trim().parse().unwrap();
     threholdvalue = lines[1].trim().parse().unwrap();
     totalvalue = lines[2].trim().parse().unwrap();
+    
+    id=name.trim().parse::<u32>().unwrap();
 
     println!(
         "id ={} , thresh={},total={}",
@@ -194,9 +206,9 @@ fn main() {
     let bytes_committed = convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
 
     let mut participantvectorpath = String::from("/opt/datafrost/")
-        + &lines[0].to_string()
+        + &id.clone().to_string()
         + "/participantvector"
-        + &lines[0].to_string()
+        + &id.clone().to_string()
         + ".txt";
     println!(
         "Verify the Participantvectorbinary file at {}",
@@ -235,6 +247,7 @@ fn main() {
                 + "/participantvector"
                 + &counter_party.to_string()
                 + ".txt";
+                println!("{}",path_to_read_party_vector.clone());
             let mut party_file = match File::open(&path_to_read_party_vector) {
                 Ok(party_file) => party_file,
                 Err(_) => panic!("no such file"),
@@ -260,6 +273,7 @@ fn main() {
         }
         counter_party = counter_party + 1;
     }
+    println!("{:?}",other_party_vectors);
     // wait here till all parties have processed participant vectors from all other parties and
     // contructed other participant vectors from all other parties
     // Tokio.await() here
@@ -269,11 +283,15 @@ fn main() {
     //DKG first Part  Round One
     // with multi parties
     // create a party state for DKG with params, secret coeffecients own party vectors and other participant vectors
-
-    let mut partystate =
-        DistributedKeyGeneration::<_>::new(&params, &id, &_partycoeffs, &mut other_party_vectors)
-            .or(Err(()))
-            .unwrap();
+    println!("id is {}",id);
+    println!("params are  {:?}",params);
+    // let mut partystate =
+    //     DistributedKeyGeneration::<_>::new(&params, &id, &_partycoeffs, &mut other_party_vectors)
+    //         .or(Err(()))
+    //         .unwrap();
+        let mut partystate =DistributedKeyGeneration::<_>::new(&params, &id, &_partycoeffs, &mut other_party_vectors);
+        
+           let partystate=partystate.unwrap();
     // create Secret Share vector from Participant State acheived from DKG
     let mut partyone_secrets: &Vec<SecretShare> = partystate.their_secret_shares().unwrap();
 
@@ -287,9 +305,11 @@ fn main() {
         + "/party_secrets"
         + id.to_string().trim()
         + ".txt";
+        println!("{:?}",fullparty.clone());
     //1fs::remove_file(&secret_share_filepath).expect("could not remove file");
     let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
-    let _ = secret_file.write_all(&fullparty);
+    let reds = secret_file.write_all(&fullparty);
+    println!("{:?}",reds);
 
     println!("Checking all files are written with party scecrets");
     // wait here for all participants to write their secret file
@@ -786,14 +806,16 @@ fn main() {
         // of bincode was used to serialze Scaler  and vice versa.
         //The only draw back is that the size of original scaler is 32 bytes while converting it
         // using bincode makes it 40 bytes.
-
+         println!("{:?}",zkp.r.clone());
+    println!("{:?}",bincode::serialize(&zkp.r.clone()).unwrap());
+    println!("{}",bincode::serialize(&zkp.r.clone()).unwrap().len());
         let rbytes = bincode::serialize(&zkp.r).unwrap();
-        let split = rbytes.split_at(40);
-        resultbytes[0..40].clone_from_slice(&split.0);
+        let split = rbytes.split_at(32);
+        resultbytes[0..32].clone_from_slice(&split.0);
         //copy R bytes to resulant bytes at the start of byte array
         let sbytes = bincode::serialize(&zkp.s).unwrap();
-        let split = sbytes.split_at(40);
-        resultbytes[40..80].clone_from_slice(&split.0);
+        let split = sbytes.split_at(32);
+        resultbytes[32..64].clone_from_slice(&split.0);
 
         //copy S bytes to resulant bytes at the specified location
         // Total commitments are 7 in our case due to theshold
@@ -849,10 +871,10 @@ fn main() {
             | (bytes_sequence[3] as u32);
         // copy r and s bytes from slice
         // to convert these bytes back i
-        let mut bytes_for_r: [u8; 40] = [0; 40];
-        bytes_for_r.copy_from_slice(&party_bytes[0..40]);
-        let mut bytes_for_s: [u8; 40] = [0; 40];
-        bytes_for_s.copy_from_slice(&party_bytes[40..80]);
+        let mut bytes_for_r: [u8; 32] = [0; 32];
+        bytes_for_r.copy_from_slice(&party_bytes[0..32]);
+        let mut bytes_for_s: [u8; 32] = [0; 32];
+        bytes_for_s.copy_from_slice(&party_bytes[32..64]);
 
         // create S and R from De-Serializing bincode and
 
@@ -1043,8 +1065,8 @@ fn partialsig_to_bytes(signtss: PartialThresholdSignature) -> [u8; 44] {
     let mut resultbytes: [u8; 44] = [0; 44];
     let bytesz = bincode::serialize(&signtss.z).unwrap();
     println!("{:?}", bytesz.len());
-    let split = bytesz.split_at(40);
-    resultbytes[0..40].clone_from_slice(&split.0);
+    let split = bytesz.split_at(32);
+    resultbytes[0..32].clone_from_slice(&split.0);
     resultbytes[40..44].clone_from_slice(indexbytes.as_slice());
 
     resultbytes
@@ -1054,9 +1076,9 @@ fn partialsig_from_bytes(bytes: [u8; 44]) -> PartialThresholdSignature {
     indexbytes.copy_from_slice(&bytes[40..44]);
 
     let indexvalue = u32::from_be_bytes(indexbytes);
-    let mut scalerbytes: [u8; 40] = [0; 40];
+    let mut scalerbytes: [u8; 32] = [0; 32];
 
-    scalerbytes.copy_from_slice(&bytes[0..40]);
+    scalerbytes.copy_from_slice(&bytes[0..32]);
     let zscaler: Result<Scalar, Box<bincode::ErrorKind>> =
         bincode::deserialize(scalerbytes.as_ref());
     println!("{:?}", &zscaler.unwrap());
