@@ -145,15 +145,15 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 
 fn main() {
     let mut name = String::new();
-    let mut threholdvalue: u32 = 7;
+    let mut threholdvalue: u32 =7;
     let mut totalvalue: u32 = 11;
     let mut id: u32 = 1;
 
     println!("Kindly enter Current party value");
     let _ = std::io::stdin().read_line(&mut name);
     // read params from file and assign them to id line0, thres line1 and totalvalue line2
-    let lines = lines_from_file("/home/rusty/web3/substrate-aura-frost/client/consensus/Frost-projective/src/params.txt");
-    id = lines[0].trim().parse().unwrap();
+    //let lines = lines_from_file("/home/rusty/web3/substrate-aura-frost/client/consensus/Frost-projective/src/params.txt");
+    //id = lines[0].trim().parse().unwrap();
    // threholdvalue = lines[1].trim().parse().unwrap();
     //totalvalue = lines[2].trim().parse().unwrap();
     
