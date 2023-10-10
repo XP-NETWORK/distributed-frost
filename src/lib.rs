@@ -669,7 +669,7 @@
 //! implementation uses `HashMap`s for the signature creation and aggregation
 //! protocols, and thus requires the standard library.
 
-#![no_std]
+// #![no_std]
 #![warn(future_incompatible)]
 #![deny(missing_docs)]
 #![allow(non_snake_case)]
@@ -694,11 +694,13 @@ pub mod nizk;
 // and signers), which requires std.
 pub mod signature;
 
+use std::vec::Vec;
 pub use keygen::DistributedKeyGeneration;
 pub use keygen::GroupKey;
 pub use keygen::IndividualPublicKey;
 pub use keygen::Participant;
 pub use keygen::SecretKey as IndividualSecretKey;
+use keygen::SecretShare;
 pub use parameters::Parameters;
 #[cfg(feature = "std")]
 pub use precomputation::generate_commitment_share_lists;
@@ -709,19 +711,21 @@ pub use crate::signature::compute_message_hash;
 #[cfg(feature = "std")]
 pub use crate::signature::SignatureAggregator;
 
+///@Irtisam24TODO add proper documentation
+#[derive(Clone, Debug)]
 pub struct FrostInfo {
-    threholdvalue: u32,
-    totalvalue: u32,
+    thresholdvalue: u8,
+    totalvalue: u8,
 }
 
-// The secret Vector of  particpant to be converted to bytes
-// These secrets are to be shared with other parties .
-// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
-// and create a Vector of secret shares with all secret shares from all parties destined for self
-//In configuration of 11 Parties, each party will get 10 SecretShares
-// Size of one SecretShare is 44 bytes . so total size would be 440
+/// The secret Vector of  particpant to be converted to bytes
+/// These secrets are to be shared with other parties .
+/// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+/// and create a Vector of secret shares with all secret shares from all parties destined for self
+/// In configuration of 11 Parties, each party will get 10 SecretShares
+/// Size of one SecretShare is 44 bytes . so total size would be 440
 fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>) -> [u8; 440] {
-    ///Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
+    //Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
     // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we
     // serialize it with bincode instead of using to bytes function which return the sec bytes
     // and adding index manually
@@ -745,12 +749,12 @@ fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>) -> [u8; 440] {
     secretbytes
 }
 
-// Inverting Bytes back to secret Vector of  particpant
-// These secrets are to be shared with other parties.
-// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
-// and create a Vector of secret shares with all secret shares from all parties destined for self
-//In configuration of 11 Parties, each party will get 10 SecretShares
-// Every Secret share is a vector contaning 10 Secrete shares in the configuration of 11 parties
+/// Inverting Bytes back to secret Vector of  particpant
+/// These secrets are to be shared with other parties.
+/// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+/// and create a Vector of secret shares with all secret shares from all parties destined for self
+/// In configuration of 11 Parties, each party will get 10 SecretShares
+/// Every Secret share is a vector contaning 10 Secrete shares in the configuration of 11 parties
 fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
     //Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
     // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we
@@ -760,7 +764,7 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 
     let mut startindex = 0;
     let mut endindex = 36;
-    let mut total = 11;
+    let total = 11;
     let mut count = 1;
     while count < total {
         let mut bytesvalues: [u8; 36] = [0; 36];
@@ -783,4 +787,11 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
     secret_vector_from_bytes
 }
 
-pub fn create_participant() {}
+///@Irtisam24TODO add propocumentation
+pub fn create_participant(frostInfo: FrostInfo, id: u8) {
+    // Create Participant using parameters
+    let params = Parameters {
+        n: frostInfo.totalvalue,
+        t: frostInfo.thresholdvalue,
+    };
+}

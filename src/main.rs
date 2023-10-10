@@ -138,8 +138,8 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 
 fn main() {
     let mut name = String::new();
-    let mut threholdvalue: u32 = 7;
-    let mut totalvalue: u32 = 11;
+    let threholdvalue: u32 = 7;
+    let totalvalue: u32 = 11;
     let mut id: u32 = 1;
 
     println!("Kindly enter Current party value");
