@@ -4,7 +4,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
 use core::cmp::Ordering;
-use frost_secp256k1;
+use frost_secp256k1::{ self, FrostInfo };
 // use frost_secp256k1::{
 //     compute_message_hash, generate_commitment_share_lists, keygen,
 //     keygen::SecretShare,
@@ -167,9 +167,9 @@ fn main() {
     let mut data_file = File::create(publickeytofile).expect("creation failed");
 
     // Create Participant using parameters
-    let params = Parameters {
-        n: totalvalue,
-        t: threholdvalue,
+    let params = FrostInfo {
+        totalvalue: totalvalue as u8,
+        thresholdvalue: threholdvalue as u8,
     };
     // Create Participant using parameters with total number of Participants
     // and threshold value
@@ -199,7 +199,7 @@ fn main() {
     // These 315 bytes will be shared between all parties.
     let bytes_committed = convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
 
-    let mut participantvectorpath =
+    let participantvectorpath =
         String::from("/opt/datafrost/") +
         &id.clone().to_string() +
         "/participantvector" +

@@ -695,6 +695,12 @@ pub mod nizk;
 pub mod signature;
 
 use std::vec::Vec;
+use generic_array::GenericArray;
+use generic_array::typenum::B0;
+use generic_array::typenum::B1;
+use generic_array::typenum::UTerm;
+use k256::elliptic_curve::group::GroupEncoding;
+use keygen::Coefficients;
 pub use keygen::DistributedKeyGeneration;
 pub use keygen::GroupKey;
 pub use keygen::IndividualPublicKey;
@@ -712,11 +718,15 @@ pub use crate::signature::compute_message_hash;
 pub use crate::signature::SignatureAggregator;
 
 ///@Irtisam24TODO add proper documentation
-#[derive(Clone, Debug,Copy)]
+#[derive(Clone, Debug, Copy)]
 pub struct FrostInfo {
-    thresholdvalue: u8,
-    totalvalue: u8,
+    ///
+    pub thresholdvalue: u8,
+    ///
+    pub totalvalue: u8,
 }
+
+type PublicBytes =GenericArray<u8, sha3::digest::typenum::UInt<sha3::digest::typenum::UInt<sha3::digest::typenum::UInt<sha3::digest::typenum::UInt<sha3::digest::typenum::UInt<sha3::digest::typenum::UInt<UTerm, B1>, B0>, B0>, B0>, B0>, B1>>;
 
 /// The secret Vector of  particpant to be converted to bytes
 /// These secrets are to be shared with other parties .
@@ -788,7 +798,13 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 }
 
 ///@Irtisam24TODO add propocumentation
-pub fn create_participant(frostInfo: FrostInfo, id: u8) {
-    // Create Participant using parameters
-    
+pub fn create_participant(frostInfo: FrostInfo, id: u8)->(PublicBytes, Coefficients) {
+    // Create Participant using parameters with total number of Participants
+    // and threshold value
+    let (party, partycoeffs) = Participant::new(&frostInfo, id.into());
+    //_partycoeffs are never to shared as these act as the private key for participant in
+    // forwarding the Distributed keygeneration algorithm
+    //Convert Public key to bytes for writting and distrbution.
+    let public_bytes = party.public_key().unwrap().to_bytes();
+    (public_bytes, partycoeffs)
 }
