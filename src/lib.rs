@@ -712,7 +712,7 @@ pub use crate::signature::compute_message_hash;
 pub use crate::signature::SignatureAggregator;
 
 ///@Irtisam24TODO add proper documentation
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug,Copy)]
 pub struct FrostInfo {
     thresholdvalue: u8,
     totalvalue: u8,
@@ -790,8 +790,5 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 ///@Irtisam24TODO add propocumentation
 pub fn create_participant(frostInfo: FrostInfo, id: u8) {
     // Create Participant using parameters
-    let params = Parameters {
-        n: frostInfo.totalvalue,
-        t: frostInfo.thresholdvalue,
-    };
+    
 }
