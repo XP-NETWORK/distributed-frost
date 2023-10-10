@@ -50,13 +50,13 @@
 //! of scope, they each need to agree upon their *participant index* which is
 //! some non-zero integer unique to each of them (these are the `1`, `2`, and
 //! `3` in the following examples).
-//! 
+//!
 //! ```rust
 //! # use frost_secp256k1::Parameters;
 //! use frost_secp256k1::Participant;
 //! #
 //! # let params = Parameters { t: 2, n: 3 };
-//! 
+//!
 //! let (alice, alice_coefficients) = Participant::new(&params, 1);
 //! let (bob, bob_coefficients) = Participant::new(&params, 2);
 //! let (carol, carol_coefficients) = Participant::new(&params, 3);
@@ -708,3 +708,79 @@ pub use signature::ThresholdSignature;
 pub use crate::signature::compute_message_hash;
 #[cfg(feature = "std")]
 pub use crate::signature::SignatureAggregator;
+
+pub struct FrostInfo {
+    threholdvalue: u32,
+    totalvalue: u32,
+}
+
+// The secret Vector of  particpant to be converted to bytes
+// These secrets are to be shared with other parties .
+// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+// and create a Vector of secret shares with all secret shares from all parties destined for self
+//In configuration of 11 Parties, each party will get 10 SecretShares
+// Size of one SecretShare is 44 bytes . so total size would be 440
+fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>) -> [u8; 440] {
+    ///Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
+    // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we
+    // serialize it with bincode instead of using to bytes function which return the sec bytes
+    // and adding index manually
+    // every secret share is 44 bytes long
+    let total = secretvector.len();
+    let mut count = 0;
+    let mut secretbytes: [u8; 440] = [0; 440];
+    let mut startindex = 0;
+    let mut endindex = 0;
+    // loop through all bytes and calculating the size of next location
+    //  by getting the length and adding it in the start index
+    while count < total {
+        let writebytes: Vec<u8> = bincode::serialize(&secretvector[count]).unwrap();
+        // convert secret vector[count] to bytes using bincode instead of to bytes function
+        let size: usize = writebytes.len();
+        endindex = endindex + size;
+        secretbytes[startindex..endindex].copy_from_slice(writebytes.as_slice());
+        count = count + 1;
+        startindex = endindex;
+    }
+    secretbytes
+}
+
+// Inverting Bytes back to secret Vector of  particpant
+// These secrets are to be shared with other parties.
+// Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
+// and create a Vector of secret shares with all secret shares from all parties destined for self
+//In configuration of 11 Parties, each party will get 10 SecretShares
+// Every Secret share is a vector contaning 10 Secrete shares in the configuration of 11 parties
+fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
+    //Structure of one Secretbytes is Index and polynomial_evaluation which is a Scaler ( 40+4)
+    // Direct Constructor for polynomial_evaluation ( Scaler) is not present so we
+    // DEserialize it with bincode which return the secret SHare
+    // and pushing it to the Secret vector
+    let mut secret_vector_from_bytes: Vec<SecretShare> = vec![];
+
+    let mut startindex = 0;
+    let mut endindex = 36;
+    let mut total = 11;
+    let mut count = 1;
+    while count < total {
+        let mut bytesvalues: [u8; 36] = [0; 36];
+        // Initialize 44 bytes to zero and copy from the input from start index to end index
+        // which will be looping through starting from [0..44]
+        bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
+        // Create a clone secret share by deserializing it using bincode
+        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>> = bincode::deserialize(
+            &bytesvalues
+        );
+        // unwrap the secretshare and push it on the secretvector to be returned.
+        //for a party of 11 the vector will have a size of 10.
+        secret_vector_from_bytes.push(clone_secret_share.unwrap());
+        // swap the end index with start index and increade endindex by 44
+
+        count = count + 1;
+        startindex = endindex;
+        endindex = endindex + 36;
+    }
+    secret_vector_from_bytes
+}
+
+pub fn create_participant() {}

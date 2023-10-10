@@ -15,23 +15,24 @@ use frost_secp256k1;
 // };
 
 use frost_secp256k1::{
-    compute_message_hash, generate_commitment_share_lists, keygen,
+    compute_message_hash,
+    generate_commitment_share_lists,
+    keygen,
     keygen::SecretShare,
-    precomputation::{CommitmentShare, PublicCommitmentShareList},
-    signature::{Aggregator, PartialThresholdSignature, Signer},
-    DistributedKeyGeneration, GroupKey, IndividualPublicKey, IndividualSecretKey, Parameters,
-    Participant, SignatureAggregator,
+    precomputation::PublicCommitmentShareList,
+    signature::{ PartialThresholdSignature, Signer },
+    DistributedKeyGeneration,
+    GroupKey,
+    IndividualPublicKey,
+    Parameters,
+    Participant,
+    SignatureAggregator,
 };
 
-use generic_array::typenum::private::IsEqualPrivate;
-use k256::{
-    ecdsa::Signature,
-    elliptic_curve::{group::GroupEncoding },
-    AffinePoint, PublicKey, Scalar, Secp256k1, SecretKey,
-};
+use k256::{ elliptic_curve::group::GroupEncoding, AffinePoint, PublicKey, Scalar };
 
 use core::convert::TryFrom;
-use generic_array::typenum::{Or, Unsigned};
+use generic_array::typenum::{ Or, Unsigned };
 use generic_array::GenericArray;
 #[cfg(feature = "std")]
 use rand::rngs::OsRng;
@@ -39,14 +40,7 @@ use rand::seq::index;
 use sec1::point;
 use serde;
 
-use std::{
-    convert::TryInto,
-    fs,
-    fs::File,
-    io::{prelude::*, Read, Write},
-    usize,
-    vec::Vec,
-};
+use std::{ convert::TryInto, fs, fs::File, io::{ prelude::*, Read, Write }, usize, vec::Vec };
 //Size index
 // public[id] 33 bytes
 // participantvector[id] 315bytes
@@ -66,9 +60,7 @@ fn lines_from_file(filename: &str) -> Vec<String> {
         Err(_) => panic!("no such file"),
     };
     let mut file_contents = String::new();
-    file.read_to_string(&mut file_contents)
-        .ok()
-        .expect("failed to read!");
+    file.read_to_string(&mut file_contents).ok().expect("failed to read!");
     let lines: Vec<String> = file_contents
         .split("\n")
         .map(|s: &str| s.to_string())
@@ -106,7 +98,7 @@ fn convert_secret_to_bytes(secretvector: &Vec<SecretShare>) -> [u8; 440] {
     secretbytes
 }
 
-// Cinverting Bytes back to secret Vector of  particpant
+// Inverting Bytes back to secret Vector of  particpant
 // These secrets are to be shared with other parties.
 // Before proceeding to the Round one every party must collect Secret shares created by all other parties for self
 // and create a Vector of secret shares with all secret shares from all parties destined for self
@@ -129,8 +121,9 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
         // which will be looping through starting from [0..44]
         bytesvalues.copy_from_slice(&secretbytes[startindex..endindex]);
         // Create a clone secret share by deserializing it using bincode
-        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>> =
-            bincode::deserialize(&bytesvalues);
+        let clone_secret_share: Result<SecretShare, Box<bincode::ErrorKind>> = bincode::deserialize(
+            &bytesvalues
+        );
         // unwrap the secretshare and push it on the secretvector to be returned.
         //for a party of 11 the vector will have a size of 10.
         secret_vector_from_bytes.push(clone_secret_share.unwrap());
@@ -145,7 +138,7 @@ fn convert_bytes_to_secret(secretbytes: [u8; 440]) -> Vec<SecretShare> {
 
 fn main() {
     let mut name = String::new();
-    let mut threholdvalue: u32 =7;
+    let mut threholdvalue: u32 = 7;
     let mut totalvalue: u32 = 11;
     let mut id: u32 = 1;
 
@@ -154,10 +147,10 @@ fn main() {
     // read params from file and assign them to id line0, thres line1 and totalvalue line2
     //let lines = lines_from_file("/home/rusty/web3/substrate-aura-frost/client/consensus/Frost-projective/src/params.txt");
     //id = lines[0].trim().parse().unwrap();
-   // threholdvalue = lines[1].trim().parse().unwrap();
+    // threholdvalue = lines[1].trim().parse().unwrap();
     //totalvalue = lines[2].trim().parse().unwrap();
-    
-    id=name.trim().parse::<u32>().unwrap();
+
+    id = name.trim().parse::<u32>().unwrap();
 
     println!(
         "id ={} , thresh={},total={}",
@@ -187,11 +180,12 @@ fn main() {
     let public_bytes = party.public_key().unwrap().to_bytes();
     let _file_write_result = data_file.write_all(&public_bytes);
     // Create public key file in the designated folder
-    let mut public_key_filepath = String::from("/opt/datafrost/")
-        + id.to_string().trim()
-        + "/public"
-        + id.to_string().trim()
-        + ".txt";
+    let mut public_key_filepath =
+        String::from("/opt/datafrost/") +
+        id.to_string().trim() +
+        "/public" +
+        id.to_string().trim() +
+        ".txt";
     let mut public_file = match File::open(&public_key_filepath) {
         Ok(public_file) => public_file,
         Err(_) => panic!("no such file"),
@@ -205,15 +199,13 @@ fn main() {
     // These 315 bytes will be shared between all parties.
     let bytes_committed = convert_party_to_bytes(&id, &party, &party.proof_of_secret_key);
 
-    let mut participantvectorpath = String::from("/opt/datafrost/")
-        + &id.clone().to_string()
-        + "/participantvector"
-        + &id.clone().to_string()
-        + ".txt";
-    println!(
-        "Verify the Participantvectorbinary file at {}",
-        &participantvectorpath
-    );
+    let mut participantvectorpath =
+        String::from("/opt/datafrost/") +
+        &id.clone().to_string() +
+        "/participantvector" +
+        &id.clone().to_string() +
+        ".txt";
+    println!("Verify the Participantvectorbinary file at {}", &participantvectorpath);
     // Remove a party file if already present and Prepare new file for writing    fs::remove_file(&participantvectorpath).expect("could not remove file");
     let mut data_filecommit = File::create(&participantvectorpath).expect("creation failed"); // writing
     let result_file_write = data_filecommit.write_all(&bytes_committed);
@@ -234,7 +226,7 @@ fn main() {
     // Get shares from all party vectors
     // loop through all files and if file id is equal to self dont process it
     // will contain participant vectors of all other parties only
-    while (counter_party < 12) {
+    while counter_party < 12 {
         if counter_party == id {
             // if this loop counter is equal to own id , Dont have to store it in other participant vectors
             println!("Do nothing for self file creation");
@@ -242,12 +234,13 @@ fn main() {
             // Process participant vector fromm all other parties
             // with an extra check of looking at file writting party
             // dont process the file which has participant index equal to own ID
-            let path_to_read_party_vector = String::from("/opt/datafrost/")
-                + &counter_party.to_string()
-                + "/participantvector"
-                + &counter_party.to_string()
-                + ".txt";
-                println!("{}",path_to_read_party_vector.clone());
+            let path_to_read_party_vector =
+                String::from("/opt/datafrost/") +
+                &counter_party.to_string() +
+                "/participantvector" +
+                &counter_party.to_string() +
+                ".txt";
+            println!("{}", path_to_read_party_vector.clone());
             let mut party_file = match File::open(&path_to_read_party_vector) {
                 Ok(party_file) => party_file,
                 Err(_) => panic!("no such file"),
@@ -262,10 +255,7 @@ fn main() {
 
             if party_input.index == party.index {
                 // indicator of process for debug only
-                println!(
-                    "Dont push self key {} to Other party vector ",
-                    party_input.index
-                )
+                println!("Dont push self key {} to Other party vector ", party_input.index);
             } else {
                 // push only those participant vectors which have index not equal to own id
                 other_party_vectors.push(party_input);
@@ -273,7 +263,7 @@ fn main() {
         }
         counter_party = counter_party + 1;
     }
-    println!("{:?}",other_party_vectors);
+    println!("{:?}", other_party_vectors);
     // wait here till all parties have processed participant vectors from all other parties and
     // contructed other participant vectors from all other parties
     // Tokio.await() here
@@ -283,15 +273,20 @@ fn main() {
     //DKG first Part  Round One
     // with multi parties
     // create a party state for DKG with params, secret coeffecients own party vectors and other participant vectors
-    println!("id is {}",id);
-    println!("params are  {:?}",params);
+    println!("id is {}", id);
+    println!("params are  {:?}", params);
     // let mut partystate =
     //     DistributedKeyGeneration::<_>::new(&params, &id, &_partycoeffs, &mut other_party_vectors)
     //         .or(Err(()))
     //         .unwrap();
-        let mut partystate =DistributedKeyGeneration::<_>::new(&params, &id, &_partycoeffs, &mut other_party_vectors);
-        
-           let partystate=partystate.unwrap();
+    let mut partystate = DistributedKeyGeneration::<_>::new(
+        &params,
+        &id,
+        &_partycoeffs,
+        &mut other_party_vectors
+    );
+
+    let partystate = partystate.unwrap();
     // create Secret Share vector from Participant State acheived from DKG
     let mut partyone_secrets: &Vec<SecretShare> = partystate.their_secret_shares().unwrap();
 
@@ -300,16 +295,17 @@ fn main() {
     let fullparty = convert_secret_to_bytes(partyone_secrets);
     // share the secret shares file for all participants
 
-    let mut secret_share_filepath = String::from("/opt/datafrost/")
-        + id.to_string().trim()
-        + "/party_secrets"
-        + id.to_string().trim()
-        + ".txt";
-        println!("{:?}",fullparty.clone());
+    let mut secret_share_filepath =
+        String::from("/opt/datafrost/") +
+        id.to_string().trim() +
+        "/party_secrets" +
+        id.to_string().trim() +
+        ".txt";
+    println!("{:?}", fullparty.clone());
     //1fs::remove_file(&secret_share_filepath).expect("could not remove file");
     let mut secret_file = File::create(&secret_share_filepath).expect("creation failed");
     let reds = secret_file.write_all(&fullparty);
-    println!("{:?}",reds);
+    println!("{:?}", reds);
 
     println!("Checking all files are written with party scecrets");
     // wait here for all participants to write their secret file
@@ -325,11 +321,12 @@ fn main() {
             // no need to scan own file for own secret shares
             println!("no need to scan own file for own secret shares");
         } else {
-            let mut secret_share_filepath = String::from("/opt/datafrost/")
-                + file_nos.to_string().trim()
-                + "/party_secrets"
-                + file_nos.to_string().trim()
-                + ".txt";
+            let mut secret_share_filepath =
+                String::from("/opt/datafrost/") +
+                file_nos.to_string().trim() +
+                "/party_secrets" +
+                file_nos.to_string().trim() +
+                ".txt";
             let mut secret_file = match File::open(&secret_share_filepath) {
                 Ok(secret_file) => secret_file,
                 Err(_) => panic!("no such file"),
@@ -340,7 +337,7 @@ fn main() {
             let mut shared_vector = convert_bytes_to_secret(secret_bytes);
             // find shares belonging to self from file
             let mut vari_count = 0;
-            while (vari_count < shared_vector.len() + 1) {
+            while vari_count < shared_vector.len() + 1 {
                 //println!("going through this file {}",secret_share_filepath);
                 if shared_vector[vari_count].index == id {
                     other_party_secret_shares.push(shared_vector[vari_count].clone());
@@ -352,13 +349,14 @@ fn main() {
         } // else
         file_nos = file_nos + 1;
     } // while reading all files
-      // create a clone of Party state
+    // create a clone of Party state
 
     let partystate2: DistributedKeyGeneration<keygen::RoundOne> = partystate.clone();
     // go for DKG round 2 with own party state and other party secret shares
 
-    let partystaternd2: Result<DistributedKeyGeneration<keygen::RoundTwo>, ()> =
-        partystate2.clone().to_round_two(other_party_secret_shares);
+    let partystaternd2: Result<DistributedKeyGeneration<keygen::RoundTwo>, ()> = partystate2
+        .clone()
+        .to_round_two(other_party_secret_shares);
 
     let partystaternd2: DistributedKeyGeneration<keygen::RoundTwo> = partystaternd2.unwrap();
     // Party finale containts the groupkey and secret key for this partipant
@@ -390,22 +388,25 @@ fn main() {
     // await
     let final_public_write_bytes: [u8; 37] = final_public_key_to_bytes(partyfinale.1.to_public());
     //let final_group_key_bytes=
-    let public_keyshare_filepath = String::from("/opt/datafrost/")
-        + id.to_string().trim()
-        + "/public_final_key"
-        + id.to_string().trim()
-        + ".txt";
+    let public_keyshare_filepath =
+        String::from("/opt/datafrost/") +
+        id.to_string().trim() +
+        "/public_final_key" +
+        id.to_string().trim() +
+        ".txt";
 
-    let mut public_key_final_file =
-        File::create(&public_keyshare_filepath).expect("creation failed");
+    let mut public_key_final_file = File::create(&public_keyshare_filepath).expect(
+        "creation failed"
+    );
     let _result = public_key_final_file.write_all(&final_public_write_bytes);
 
     let final_gkey_final_bytes: [u8; 33] = final_group_key_to_bytes(partyfinale.0);
-    let group_filepath = String::from("/opt/datafrost/")
-        + id.to_string().trim()
-        + "/Group_final_key"
-        + id.to_string().trim()
-        + ".txt";
+    let group_filepath =
+        String::from("/opt/datafrost/") +
+        id.to_string().trim() +
+        "/Group_final_key" +
+        id.to_string().trim() +
+        ".txt";
     let mut group_key_final_file = File::create(&group_filepath).expect("creation failed");
     let _ = group_key_final_file.write_all(&final_gkey_final_bytes);
     println!("wait here after group key write . move forward for id 1 only");
@@ -430,7 +431,7 @@ fn main() {
 
     //     let final_gkey=final_bytes_to_group_key_(final_gkey_final_bytes);
 
-    if (id == 1) {
+    if id == 1 {
         // Read  all Group key files for assertion
         let mut group_key_vec: Vec<GroupKey> = vec![];
         // push self gkey on Vector
@@ -438,11 +439,12 @@ fn main() {
         let mut count = 12;
         let mut index_gkey = 2;
         while index_gkey < count {
-            let group_filepath = String::from("/opt/datafrost/")
-                + index_gkey.to_string().trim()
-                + "/Group_final_key"
-                + index_gkey.to_string().trim()
-                + ".txt";
+            let group_filepath =
+                String::from("/opt/datafrost/") +
+                index_gkey.to_string().trim() +
+                "/Group_final_key" +
+                index_gkey.to_string().trim() +
+                ".txt";
             let mut final_gkey_final_bytes_read: [u8; 33] = [0; 33];
             let mut gkey_reader = match File::open(&group_filepath) {
                 Ok(gkey_reader) => gkey_reader,
@@ -457,7 +459,7 @@ fn main() {
         //GroupKey.is_equal_private(_, _)
         count = group_key_vec.len();
         while index_gkey < count {
-            if (partyfinale.0.to_bytes() != group_key_vec[index_gkey].to_bytes()) {
+            if partyfinale.0.to_bytes() != group_key_vec[index_gkey].to_bytes() {
                 println!("Mismatch between Group Key of party {}", index_gkey + 1);
             } else {
                 println!(" Group Key of party {} matched", index_gkey + 1);
@@ -486,26 +488,37 @@ fn main() {
 
     //
     if id == 1 {
-        let (mut agg_Party_commshare, mut agg_secret_comshares) =
-            generate_commitment_share_lists(&mut OsRng, id, 1);
+        let (mut agg_Party_commshare, mut agg_secret_comshares) = generate_commitment_share_lists(
+            &mut OsRng,
+            id,
+            1
+        );
         // let signerres=aggregator.get_signers();
         println!("Inside agregator loop  ");
-        println!("Theshold Signature Step-1 : Creating Signature Aggregator with context, message, params and group key ");
-        let mut aggregator =
-            SignatureAggregator::new(params, partyfinale.0, context.to_vec(), message.to_vec());
+        println!(
+            "Theshold Signature Step-1 : Creating Signature Aggregator with context, message, params and group key "
+        );
+        let mut aggregator = SignatureAggregator::new(
+            params,
+            partyfinale.0,
+            context.to_vec(),
+            message.to_vec()
+        );
 
         let bytesoff: [u8; 70] = public_commitment_to_bytes(&agg_Party_commshare);
 
         // write commitment share and public key in files
-        let mut public_comshare_filepath = String::from("/opt/datafrost/")
-            + id.to_string().trim()
-            + "/public_comshares"
-            + id.to_string().trim()
-            + ".txt";
+        let mut public_comshare_filepath =
+            String::from("/opt/datafrost/") +
+            id.to_string().trim() +
+            "/public_comshares" +
+            id.to_string().trim() +
+            ".txt";
         //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
         println!("{}", public_comshare_filepath);
-        let mut public_comm_share_file =
-            File::create(&public_comshare_filepath).expect("creation failed");
+        let mut public_comm_share_file = File::create(&public_comshare_filepath).expect(
+            "creation failed"
+        );
         let result = public_comm_share_file.write_all(&bytesoff);
 
         println!("Theshold Signature Step-2 : Public Commitment share 70 bytes written ");
@@ -521,11 +534,12 @@ fn main() {
         // loop through all other files for commitment and public key
         let mut count = 2;
         while count < 12 {
-            let mut public_comshare_filepath = String::from("/opt/datafrost/")
-                + count.to_string().trim()
-                + "/public_comshares"
-                + count.to_string().trim()
-                + ".txt";
+            let mut public_comshare_filepath =
+                String::from("/opt/datafrost/") +
+                count.to_string().trim() +
+                "/public_comshares" +
+                count.to_string().trim() +
+                ".txt";
             let mut bytespublicexact: [u8; 70] = [0; 70];
             let mut file_pub = match File::open(&public_comshare_filepath) {
                 Ok(file_pub) => file_pub,
@@ -541,11 +555,12 @@ fn main() {
 
             // get commitment share list from bytes
 
-            let mut public_keyshare_filepath = String::from("/opt/datafrost/")
-                + count.to_string().trim()
-                + "/public_final_key"
-                + count.to_string().trim()
-                + ".txt";
+            let mut public_keyshare_filepath =
+                String::from("/opt/datafrost/") +
+                count.to_string().trim() +
+                "/public_final_key" +
+                count.to_string().trim() +
+                ".txt";
             let mut bytespublickey: [u8; 33] = [0; 33];
             let mut file_pubkey = match File::open(&public_keyshare_filepath) {
                 Ok(file_pubkey) => file_pubkey,
@@ -563,18 +578,18 @@ fn main() {
                                 generic_array::typenum::UInt<
                                     generic_array::typenum::UInt<
                                         generic_array::typenum::UTerm,
-                                        generic_array::typenum::B1,
+                                        generic_array::typenum::B1
                                     >,
-                                    generic_array::typenum::B0,
+                                    generic_array::typenum::B0
                                 >,
-                                generic_array::typenum::B0,
+                                generic_array::typenum::B0
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B1,
-                >,
+                    generic_array::typenum::B1
+                >
             > = GenericArray::from_slice(&bytespublickey);
             println!("{:?}", genarraypublic);
 
@@ -610,7 +625,7 @@ fn main() {
 
         let bytessamoke = signer_vector_ten_tobytes(signers, indexsign);
         println!("{:?}", bytessamoke);
-        println!("{:?}", signer_bytes_to_ten_vector((bytessamoke)));
+        println!("{:?}", signer_bytes_to_ten_vector(bytessamoke));
         let mut signer_700_file = String::from("/opt/datafrost/") + "signer_vector_700" + ".txt";
         //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
         //println!("{}",public_keyshare_filepath);
@@ -619,7 +634,9 @@ fn main() {
         println!("signer bytes written ");
         println!("go ahead on signers for writing Partial signatures aggreagotr party ");
         println!("Waiting for all other parties to write TSS ");
-        println!("Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  ");
+        println!(
+            "Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector  "
+        );
         //signer bytes written and go ahead on signers for writing Partial signatures aggreagotr party
         //Waiting for all other parties to write TSS
         //Theshold Signature Step-6 : Waiting for Signers to generate Tss against signer vector
@@ -630,11 +647,12 @@ fn main() {
         while counttss < 12 {
             let mut partial1: [u8; 44] = [0; 44];
             let mut count = 2;
-            let mut public_tss = String::from("/opt/datafrost/")
-                + counttss.to_string().trim()
-                + "/tss"
-                + counttss.to_string().trim()
-                + ".txt";
+            let mut public_tss =
+                String::from("/opt/datafrost/") +
+                counttss.to_string().trim() +
+                "/tss" +
+                counttss.to_string().trim() +
+                ".txt";
 
             let mut tss_signer = match File::open(&public_tss) {
                 Ok(tss_signer) => tss_signer,
@@ -642,13 +660,13 @@ fn main() {
             };
             let _ = tss_signer.read_exact(&mut partial1);
 
-            println!( " Theshold Signature Step-9.1: read Partial sig from file for {} signer and converted backfrom bytes",counttss+1);
+            println!(
+                " Theshold Signature Step-9.1: read Partial sig from file for {} signer and converted backfrom bytes",
+                counttss + 1
+            );
             // create partial sign
             let partial_sign1 = partialsig_from_bytes(partial1); // create partial sign
-            println!(
-                "Tss for index id {} is  {:?}",
-                partial_sign1.index, partial_sign1.z
-            );
+            println!("Tss for index id {} is  {:?}", partial_sign1.index, partial_sign1.z);
             // use aggregator function and include partial signature
             // for aggreagator
             aggregator.include_partial_signature(partial_sign1);
@@ -662,17 +680,14 @@ fn main() {
         println!(" Theshold Signature Step-11: Aggregating Finalizing");
         let threshold_signature_final: Result<
             frost_secp256k1::ThresholdSignature,
-            std::collections::HashMap<u32, &str>,
+            std::collections::HashMap<u32, &str>
         > = aggregator_finalized.aggregate();
 
         println!("");
         println!("Theshold Signature Step 12 .  wih TSS unwrap");
         if threshold_signature_final.is_ok() {
             //threshold_signature=threshold_signature.unwrap();
-            println!(
-                "{:?}",
-                threshold_signature_final.as_ref().unwrap().to_bytes()
-            );
+            println!("{:?}", threshold_signature_final.as_ref().unwrap().to_bytes());
             println!("Threshold okay");
         }
 
@@ -700,22 +715,24 @@ fn main() {
         // Calulcate message Hash for signing by Party
 
         let message_hash = compute_message_hash(&context[..], &message[..]);
-        let public_comshare_filepath = String::from("/opt/datafrost/")
-            + id.to_string().trim()
-            + "/public_comshares"
-            + id.to_string().trim()
-            + ".txt";
+        let public_comshare_filepath =
+            String::from("/opt/datafrost/") +
+            id.to_string().trim() +
+            "/public_comshares" +
+            id.to_string().trim() +
+            ".txt";
 
         println!("{}", public_comshare_filepath);
         let mut secret_file = File::create(&public_comshare_filepath).expect("creation failed");
         let bytesoff: [u8; 70] = public_commitment_to_bytes(&other_Party_commshare);
         let _result = secret_file.write_all(&bytesoff);
 
-        let mut public_keyshare_filepath = String::from("/opt/datafrost/")
-            + id.to_string().trim()
-            + "/public_final_key"
-            + id.to_string().trim()
-            + ".txt";
+        let mut public_keyshare_filepath =
+            String::from("/opt/datafrost/") +
+            id.to_string().trim() +
+            "/public_final_key" +
+            id.to_string().trim() +
+            ".txt";
 
         println!("{}", public_keyshare_filepath);
         let mut secret_file = File::create(&public_keyshare_filepath).expect("creation failed");
@@ -745,35 +762,32 @@ fn main() {
         // create Partial signature and sign message by using
         // Group key and Secrete key , Secrete Commitments , own index
         // signers vector
-        let party_partial = partyfinale
-            .1
+        let party_partial = partyfinale.1
             .sign(
                 &message_hash,
                 &partyfinale.0,
                 &mut other_party_secret_comm_share,
                 0,
-                &signer_700_from_file,
+                &signer_700_from_file
             )
             .unwrap();
         println!("{:?}", signer_700_from_file);
         println!("{:?}", party_partial);
         let output: [u8; 44] = partialsig_to_bytes(party_partial);
         let newtss = partialsig_from_bytes(output);
-        println!("writign partial signature to file ",);
+        println!("writign partial signature to file ");
         // convert Partial signature to bytes and write the output
-        let mut public_tss = String::from("/opt/datafrost/")
-            + id.to_string().trim()
-            + "/tss"
-            + id.to_string().trim()
-            + ".txt";
+        let mut public_tss =
+            String::from("/opt/datafrost/") +
+            id.to_string().trim() +
+            "/tss" +
+            id.to_string().trim() +
+            ".txt";
         //  fs::remove_file(&public_comshare_filepath).expect("could not remove file");
         println!("{}", public_tss);
         let mut tss_file = File::create(&public_tss).expect("creation failed");
         let _result = tss_file.write_all(&output);
-        println!(
-            " Theshold Signature Step-8: Created Tss for Party  id {} ",
-            id
-        );
+        println!(" Theshold Signature Step-8: Created Tss for Party  id {} ", id);
         println!("Work for Party id {}  completed  ", id);
         // wait here for message verification message from leader
         std::io::stdin().read_line(&mut name);
@@ -789,7 +803,7 @@ fn main() {
     fn convert_party_to_bytes(
         index: &u32,
         commitments_party: &frost_secp256k1::Participant,
-        zkp: &frost_secp256k1::nizk::NizkOfSecretKey,
+        zkp: &frost_secp256k1::nizk::NizkOfSecretKey
     ) -> [u8; 315] {
         // Return bytes of count 315
         // Structure of bytes
@@ -806,9 +820,9 @@ fn main() {
         // of bincode was used to serialze Scaler  and vice versa.
         //The only draw back is that the size of original scaler is 32 bytes while converting it
         // using bincode makes it 40 bytes.
-         println!("{:?}",zkp.r.clone());
-    println!("{:?}",bincode::serialize(&zkp.r.clone()).unwrap());
-    println!("{}",bincode::serialize(&zkp.r.clone()).unwrap().len());
+        println!("{:?}", zkp.r.clone());
+        println!("{:?}", bincode::serialize(&zkp.r.clone()).unwrap());
+        println!("{}", bincode::serialize(&zkp.r.clone()).unwrap().len());
         let rbytes = bincode::serialize(&zkp.r).unwrap();
         let split = rbytes.split_at(32);
         resultbytes[0..32].clone_from_slice(&split.0);
@@ -865,10 +879,11 @@ fn main() {
         // Since No direct conversion from u8 to u32 is available,
         // we skim through 8 bytes and converting them during the process
         //  and convert u8 to u32 to form Index
-        let index_u32_integer: u32 = ((bytes_sequence[0] as u32) << 24)
-            | ((bytes_sequence[1] as u32) << 16)
-            | ((bytes_sequence[2] as u32) << 8)
-            | (bytes_sequence[3] as u32);
+        let index_u32_integer: u32 =
+            ((bytes_sequence[0] as u32) << 24) |
+            ((bytes_sequence[1] as u32) << 16) |
+            ((bytes_sequence[2] as u32) << 8) |
+            (bytes_sequence[3] as u32);
         // copy r and s bytes from slice
         // to convert these bytes back i
         let mut bytes_for_r: [u8; 32] = [0; 32];
@@ -878,24 +893,25 @@ fn main() {
 
         // create S and R from De-Serializing bincode and
 
-        let skey: Result<Scalar, Box<bincode::ErrorKind>> =
-            bincode::deserialize(bytes_for_s.as_ref());
-        let rkey: Result<Scalar, Box<bincode::ErrorKind>> =
-            bincode::deserialize(bytes_for_r.as_ref());
+        let skey: Result<Scalar, Box<bincode::ErrorKind>> = bincode::deserialize(
+            bytes_for_s.as_ref()
+        );
+        let rkey: Result<Scalar, Box<bincode::ErrorKind>> = bincode::deserialize(
+            bytes_for_r.as_ref()
+        );
         // create a new Nizk of Secret Keys  with r and S for formation of participant
         // This Nizk is a ZKP which allows other parties to verify that the particpant is holder of private key / Secret Vector and
         // susequently verfied Participant        let mut zkpfull: frost_secp256k1::nizk::NizkOfSecretKey =
-        let mut zkpfull: frost_secp256k1::nizk::NizkOfSecretKey =
-            frost_secp256k1::nizk::NizkOfSecretKey {
-                s: skey.unwrap(),
-                r: rkey.unwrap(),
-            };
+        let mut zkpfull: frost_secp256k1::nizk::NizkOfSecretKey = frost_secp256k1::nizk::NizkOfSecretKey {
+            s: skey.unwrap(),
+            r: rkey.unwrap(),
+        };
         // Counter of Commitment so to loop through all 7 commitments
 
         let mut commit = 0;
         let mut start_bytes = 80;
         // Counter of Commitment so to loop through all 7 commitments of size 33bytes
-        while (commit < 7) {
+        while commit < 7 {
             let endvalue = start_bytes + 33;
             // Each commitment is of 33 bytes which is actually a projective point with two scalers .
             let mut bytescommit: [u8; 33] = [0; 33];
@@ -910,18 +926,18 @@ fn main() {
                                 generic_array::typenum::UInt<
                                     generic_array::typenum::UInt<
                                         generic_array::typenum::UTerm,
-                                        generic_array::typenum::B1,
+                                        generic_array::typenum::B1
                                     >,
-                                    generic_array::typenum::B0,
+                                    generic_array::typenum::B0
                                 >,
-                                generic_array::typenum::B0,
+                                generic_array::typenum::B0
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B1,
-                >,
+                    generic_array::typenum::B1
+                >
             > = GenericArray::from_slice(bytescommit.as_ref());
             // Create a Projective point from bytes with z [1,0,0,0,0]
             let mut byte_projective = k256::ProjectivePoint::from_bytes(&genarray).unwrap();
@@ -999,18 +1015,18 @@ fn public_bytes_to_commitment(returnbytes: [u8; 70]) -> PublicCommitmentShareLis
                         generic_array::typenum::UInt<
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UTerm,
-                                generic_array::typenum::B1,
+                                generic_array::typenum::B1
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B0,
+                generic_array::typenum::B0
             >,
-            generic_array::typenum::B1,
-        >,
+            generic_array::typenum::B1
+        >
     > = GenericArray::from_slice(affinebytes.as_ref());
     let affine1: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
     // affine point 2 is converted from bytes33..66
@@ -1027,18 +1043,18 @@ fn public_bytes_to_commitment(returnbytes: [u8; 70]) -> PublicCommitmentShareLis
                         generic_array::typenum::UInt<
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UTerm,
-                                generic_array::typenum::B1,
+                                generic_array::typenum::B1
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B0,
+                generic_array::typenum::B0
             >,
-            generic_array::typenum::B1,
-        >,
+            generic_array::typenum::B1
+        >
     > = GenericArray::from_slice(affinebytes.as_ref());
     let affine2: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
 
@@ -1079,11 +1095,13 @@ fn partialsig_from_bytes(bytes: [u8; 44]) -> PartialThresholdSignature {
     let mut scalerbytes: [u8; 32] = [0; 32];
 
     scalerbytes.copy_from_slice(&bytes[0..32]);
-    let zscaler: Result<Scalar, Box<bincode::ErrorKind>> =
-        bincode::deserialize(scalerbytes.as_ref());
+    let zscaler: Result<Scalar, Box<bincode::ErrorKind>> = bincode::deserialize(
+        scalerbytes.as_ref()
+    );
     println!("{:?}", &zscaler.unwrap());
-    let mut zscaler: Result<Scalar, Box<bincode::ErrorKind>> =
-        bincode::deserialize(scalerbytes.as_ref());
+    let mut zscaler: Result<Scalar, Box<bincode::ErrorKind>> = bincode::deserialize(
+        scalerbytes.as_ref()
+    );
     let zscaler2 = zscaler.unwrap();
     let returntss: PartialThresholdSignature = PartialThresholdSignature {
         index: indexvalue,
@@ -1096,7 +1114,7 @@ fn partialsig_from_bytes(bytes: [u8; 44]) -> PartialThresholdSignature {
 // These vectors are generated by Signature aggregators and only to be used by specific signers
 fn signer_vector_ten_tobytes(
     signers: &Vec<frost_secp256k1::signature::Signer>,
-    indexsign: u32,
+    indexsign: u32
 ) -> [u8; 700] {
     // Each signer Party is made up of 70 bytes . Total 10 signers are used in 7/11 configuration
     //Only ten signers are available as one party takes role of signature aggreagator .
@@ -1111,22 +1129,17 @@ fn signer_vector_ten_tobytes(
     let mut start_bytes = 0;
     let mut end_bytes = 33;
     while count < 10 {
-        let bytes1 = signers[index as usize]
-            .published_commitment_share
-            .0
-            .to_bytes();
-        let bytes2 = signers[index as usize]
-            .published_commitment_share
-            .1
-            .to_bytes();
+        let bytes1 = signers[index as usize].published_commitment_share.0.to_bytes();
+        let bytes2 = signers[index as usize].published_commitment_share.1.to_bytes();
         returnbytes[start_bytes..end_bytes].copy_from_slice(&bytes1);
         start_bytes = end_bytes;
         end_bytes = end_bytes + 33;
         returnbytes[start_bytes..end_bytes].copy_from_slice(&bytes2);
         start_bytes = end_bytes;
         end_bytes = end_bytes + 4;
-        returnbytes[start_bytes..end_bytes]
-            .copy_from_slice(&signers[index as usize].participant_index.to_be_bytes());
+        returnbytes[start_bytes..end_bytes].copy_from_slice(
+            &signers[index as usize].participant_index.to_be_bytes()
+        );
         start_bytes = end_bytes;
         end_bytes = end_bytes + 33;
         count = count + 1;
@@ -1160,18 +1173,18 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UInt<
                                     generic_array::typenum::UTerm,
-                                    generic_array::typenum::B1,
+                                    generic_array::typenum::B1
                                 >,
-                                generic_array::typenum::B0,
+                                generic_array::typenum::B0
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B1,
-            >,
+                generic_array::typenum::B1
+            >
         > = GenericArray::from_slice(affinebytes.as_ref());
         let affine1: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
         startbytes = endbytes;
@@ -1188,18 +1201,18 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UInt<
                                     generic_array::typenum::UTerm,
-                                    generic_array::typenum::B1,
+                                    generic_array::typenum::B1
                                 >,
-                                generic_array::typenum::B0,
+                                generic_array::typenum::B0
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B1,
-            >,
+                generic_array::typenum::B1
+            >
         > = GenericArray::from_slice(affinebytes.as_ref());
         let affine2: AffinePoint = AffinePoint::from_bytes(&genarrya).unwrap();
         startbytes = endbytes;
@@ -1224,8 +1237,8 @@ fn signer_bytes_to_ten_vector(signerbytes: [u8; 700]) -> Vec<frost_secp256k1::si
 
     return signervector;
 }
-// Create Custom bytes for Individual Public key 
-// which is made up of Index of party and affine point 
+// Create Custom bytes for Individual Public key
+// which is made up of Index of party and affine point
 fn final_public_key_to_bytes(final_public_key: IndividualPublicKey) -> [u8; 37] {
     // 4 bytes for Index and 33 bytes for Affine point
     let mut returnbytes: [u8; 37] = [0; 37];
@@ -1238,9 +1251,9 @@ fn final_public_key_to_bytes(final_public_key: IndividualPublicKey) -> [u8; 37] 
 }
 //convert byte array back to Individual Public Key
 fn final_bytes_to_public_key(final_public_bytes: [u8; 37]) -> IndividualPublicKey {
-    //First 33 bytes  make up affine point .Constructor from 
-    //Sized array is not working so convert sized array to generic array 
-    //and then run constructor of affine point 
+    //First 33 bytes  make up affine point .Constructor from
+    //Sized array is not working so convert sized array to generic array
+    //and then run constructor of affine point
     //
     let mut affinex: [u8; 33] = [0; 33];
     affinex.copy_from_slice(final_public_bytes[0..33].as_ref());
@@ -1253,18 +1266,18 @@ fn final_bytes_to_public_key(final_public_bytes: [u8; 37]) -> IndividualPublicKe
                         generic_array::typenum::UInt<
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UTerm,
-                                generic_array::typenum::B1,
+                                generic_array::typenum::B1
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B0,
+                generic_array::typenum::B0
             >,
-            generic_array::typenum::B1,
-        >,
+            generic_array::typenum::B1
+        >
     > = GenericArray::from_slice(affinex.as_ref());
 
     let shared = AffinePoint::from_bytes(genarray);
@@ -1272,8 +1285,8 @@ fn final_bytes_to_public_key(final_public_bytes: [u8; 37]) -> IndividualPublicKe
     indexbytes.copy_from_slice(&final_public_bytes[33..37]);
     let indexvalue: u32 = u32::from_be_bytes(indexbytes);
     let final_public_key: IndividualPublicKey = IndividualPublicKey {
-        index: (indexvalue),
-        share: (shared.unwrap()),
+        index: indexvalue,
+        share: shared.unwrap(),
     };
 
     return final_public_key;
@@ -1295,18 +1308,18 @@ fn final_bytes_to_group_key_(bytes_groupkey: [u8; 33]) -> GroupKey {
                         generic_array::typenum::UInt<
                             generic_array::typenum::UInt<
                                 generic_array::typenum::UTerm,
-                                generic_array::typenum::B1,
+                                generic_array::typenum::B1
                             >,
-                            generic_array::typenum::B0,
+                            generic_array::typenum::B0
                         >,
-                        generic_array::typenum::B0,
+                        generic_array::typenum::B0
                     >,
-                    generic_array::typenum::B0,
+                    generic_array::typenum::B0
                 >,
-                generic_array::typenum::B0,
+                generic_array::typenum::B0
             >,
-            generic_array::typenum::B1,
-        >,
+            generic_array::typenum::B1
+        >
     > = GenericArray::from_slice(bytes_groupkey.as_ref());
     let affine_Gkey = AffinePoint::from_bytes(genarray);
 
