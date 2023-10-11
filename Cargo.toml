@@ -1,6 +1,6 @@
 [package]
 name = "distributed-frost"
-version = "0.2.8"
+version = "0.2.9"
 authors = [
     "isis lovecruft <isis@patternsinthevoid.net>",
     "Rupansh Sekar <rupanshsekar@hotmail.com>",
