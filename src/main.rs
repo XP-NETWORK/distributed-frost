@@ -861,8 +861,8 @@ fn main() {
         pub r: Scalar,
     }
 
-    // Function to convert Participant vector from bytes to Particpant object
-    // This function is for frost with parameters of 7/11 where 7 is  (Threshold) and 11( total parties)
+    /// Function to convert Participant vector from bytes to Particpant object
+    /// This function is for frost with parameters of 7/11 where 7 is  (Threshold) and 11( total parties)
     fn convert_bytes_to_party(party_bytes: &[u8; 315]) -> Participant {
         // Structure of bytes
         // ZKP R scaler 40 bytes
@@ -917,28 +917,7 @@ fn main() {
             let mut bytescommit: [u8; 33] = [0; 33];
             // 33 bytes for creating a commitment for Commitment vector in Participant
             bytescommit.copy_from_slice(&party_bytes[start_bytes..endvalue]);
-            let mut genarray: &GenericArray<
-                u8,
-                generic_array::typenum::UInt<
-                    generic_array::typenum::UInt<
-                        generic_array::typenum::UInt<
-                            generic_array::typenum::UInt<
-                                generic_array::typenum::UInt<
-                                    generic_array::typenum::UInt<
-                                        generic_array::typenum::UTerm,
-                                        generic_array::typenum::B1
-                                    >,
-                                    generic_array::typenum::B0
-                                >,
-                                generic_array::typenum::B0
-                            >,
-                            generic_array::typenum::B0
-                        >,
-                        generic_array::typenum::B0
-                    >,
-                    generic_array::typenum::B1
-                >
-            > = GenericArray::from_slice(bytescommit.as_ref());
+            let mut genarray = GenericArray::from_slice(bytescommit.as_ref());
             // Create a Projective point from bytes with z [1,0,0,0,0]
             let mut byte_projective = k256::ProjectivePoint::from_bytes(&genarray).unwrap();
             // Push the prepared projective point on commitment vector
